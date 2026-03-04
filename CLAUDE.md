@@ -86,7 +86,9 @@ The app is PWA-installable. Static assets in `frontend/public/`:
 - `icon-maskable.svg` — Source SVG for maskable variants
 - `manifest.json` — Web app manifest (standalone display, dark theme)
 
-`index.html` links the manifest, apple-touch-icon, and SVG favicon.
+`index.html` links the manifest, apple-touch-icon, and SVG favicon. It also sets `viewport-fit=cover` and `apple-mobile-web-app-status-bar-style=black-translucent` for edge-to-edge PWA display.
+
+**Safe area insets**: Each page applies `paddingTop: max(env(safe-area-inset-top, 0px), <default>)` via inline style to avoid content overlapping the iOS status bar/notch. The NavBar handles the bottom inset with `paddingBottom: env(safe-area-inset-bottom)`.
 
 ## Vite Dev Proxy
 

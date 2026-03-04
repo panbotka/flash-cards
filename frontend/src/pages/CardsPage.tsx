@@ -384,7 +384,7 @@ export function CardsPage() {
   return (
     <div className="fixed inset-0 flex flex-col bg-[#0a0a0a]">
       {/* Header area */}
-      <div className="shrink-0 px-4 pt-6">
+      <div className="shrink-0 px-4" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1.5rem)' }}>
         <div className="max-w-lg mx-auto w-full">
           {/* Header */}
           <div className="flex items-center justify-between mb-5">

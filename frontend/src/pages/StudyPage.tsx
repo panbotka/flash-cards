@@ -142,7 +142,7 @@ export function StudyPage() {
   })
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#0a0a0a] px-4 pt-3 pb-20 overflow-hidden">
+    <div className="fixed inset-0 flex flex-col bg-[#0a0a0a] px-4 pb-20 overflow-hidden" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)' }}>
       {/* Control bar */}
       <div className="w-full max-w-md mx-auto flex items-center justify-between mb-4 shrink-0">
         {/* Direction toggle */}

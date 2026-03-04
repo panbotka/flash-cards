@@ -23,10 +23,11 @@ Dark mode only.
 
 | Rating | Color | Usage |
 |--------|-------|-------|
-| Again | `#ff453a` | Red — forgot |
-| Hard | `#ff9f0a` | Orange — difficult |
-| Good | `#30d158` | Green — normal |
-| Easy | `#5e9eff` | Blue — easy |
+| Hard | `#ff3b30` | Red — difficult |
+| Good | `#ffd60a` | Yellow — normal |
+| Easy | `#30d158` | Green — easy |
+
+Note: The "Again" rating (1) exists in the backend but is not exposed in the UI. Only ratings 2-4 (Hard/Good/Easy) are available via buttons and swipe gestures.
 
 ### Typography
 
@@ -76,9 +77,9 @@ The primary learning interface.
 │  │  Tap to reveal │  │
 │  └────────────────┘  │
 │                      │
-│  [Again][Hard][Good][Easy]  │  ← visible after flip
+│  [Hard] [Good] [Easy]  │  ← always visible
 │                      │
-│  Space=flip  1-4=rate│  ← desktop only
+│  Space=flip  1-3=rate│  ← desktop only
 │                      │
 ├─────────────────────┤
 │ Study  Cards  Stats  │
@@ -93,11 +94,9 @@ The primary learning interface.
 - Min height 280px, max width md, rounded-2xl
 
 **Rating Buttons:**
-- 4-column grid below the card
+- 3-column grid below the card, always visible (no need to flip first)
 - Each button: rating name + next interval preview (e.g., "Good" / "1d")
-- Semi-transparent background with colored border matching rating color
-- Slide-up animation on reveal (opacity + translateY transition)
-- Disabled until card is flipped
+- Semi-transparent background with colored border matching rating color (Hard=red, Good=yellow, Easy=green)
 
 **Done State:**
 - "All caught up!" message centered
@@ -221,6 +220,12 @@ Bottom tab bar, fixed at viewport bottom.
 - Height: 64px + `env(safe-area-inset-bottom)` for iOS
 - Background: `#0a0a0a` with top border `#2a2a2a`
 - Hidden on login page
+
+### Safe Area Handling
+
+For PWA installations with `viewport-fit=cover` and `black-translucent` status bar:
+- **Top**: Each page uses `paddingTop: max(env(safe-area-inset-top, 0px), <default>)` via inline style, where `<default>` is the page's original top padding
+- **Bottom**: NavBar uses `paddingBottom: env(safe-area-inset-bottom)` via inline style
 
 ---
 

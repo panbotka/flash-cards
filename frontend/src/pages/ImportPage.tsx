@@ -129,7 +129,7 @@ export function ImportPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] pb-20">
-      <div className="mx-auto max-w-lg px-4 pt-6">
+      <div className="mx-auto max-w-lg px-4" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1.5rem)' }}>
         {/* Header */}
         <h1 className="text-2xl font-bold text-white mb-2">Import</h1>
         <p className="text-sm text-text-secondary mb-5">

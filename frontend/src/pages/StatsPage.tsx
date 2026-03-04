@@ -541,7 +541,7 @@ function HardestCardsTable() {
 // ---------------------------------------------------------------------------
 export function StatsPage() {
   return (
-    <div className="p-4 pb-20 max-w-2xl mx-auto flex flex-col gap-4">
+    <div className="p-4 pb-20 max-w-2xl mx-auto flex flex-col gap-4" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)' }}>
       <section>
         <SectionTitle>Overview</SectionTitle>
         <SummaryCards />

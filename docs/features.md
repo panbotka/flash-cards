@@ -134,9 +134,20 @@ Available on the study page:
 | Key | Action |
 |-----|--------|
 | Space | Flip card (reveal answer) |
-| 1 | Rate: Again |
-| 2 | Rate: Hard |
-| 3 | Rate: Good |
-| 4 | Rate: Easy |
+| 1 | Rate: Hard |
+| 2 | Rate: Good |
+| 3 | Rate: Easy |
 
 Shortcuts are disabled when focus is on an input field.
+
+## Swipe Gestures
+
+On mobile, swipe gestures provide an alternative to buttons:
+
+| Direction | Rating |
+|-----------|--------|
+| Left | Hard |
+| Up | Good |
+| Right | Easy |
+
+Swipe works immediately without needing to flip the card first. Visual overlay shows the rating color during swipe.
