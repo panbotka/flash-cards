@@ -4,8 +4,9 @@ A Czech-English vocabulary study tool with spaced repetition (SM-2). Single Go b
 
 ## Features
 
-- **Spaced repetition** — SM-2 algorithm with learning steps (1m, 10m), graduating intervals, and four rating levels (Again/Hard/Good/Easy)
+- **Spaced repetition** — SM-2 algorithm with learning steps (1m, 10m), graduating intervals, and three rating levels (Hard/Good/Easy)
 - **Free-flip study** — Cards show Czech first with unlimited back-and-forth flipping; rate when ready
+- **Swipe gestures** — On mobile, swipe left (Hard), up (Good), or right (Easy) with visual feedback
 - **Bulk import** — Paste or upload CSV/TSV content with auto-delimiter detection and duplicate checking
 - **Statistics** — Activity heatmap, accuracy tracking, maturity distribution, forecast, and hardest cards
 - **Tag filtering** — Organize cards with tags and filter study sessions

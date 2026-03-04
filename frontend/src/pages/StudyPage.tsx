@@ -3,6 +3,7 @@ import { FlashCard } from '../components/FlashCard'
 import { RatingButtons } from '../components/RatingButtons'
 import { useStudySession } from '../hooks/useStudySession'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
+import { useSwipeRating } from '../hooks/useSwipeRating'
 
 export function StudyPage() {
   const { card, flipped, revealed, flip, rate, isDone, newAvailable, showNewCards, isLoading, isRating } =
@@ -11,15 +12,19 @@ export function StudyPage() {
   const handlers = useMemo(
     () => ({
       space: flip,
-      '1': () => rate(1),
-      '2': () => rate(2),
-      '3': () => rate(3),
-      '4': () => rate(4),
+      '1': () => rate(2),
+      '2': () => rate(3),
+      '3': () => rate(4),
     }),
     [flip, rate],
   )
 
   useKeyboardShortcuts(handlers)
+
+  const { swipeRef, swipeStyle, swipeIndicator } = useSwipeRating({
+    onRate: rate,
+    enabled: revealed && !isRating,
+  })
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-[#0a0a0a] px-4 pt-12 pb-20">
@@ -45,12 +50,31 @@ export function StudyPage() {
             </div>
           )}
 
-          <FlashCard
-            front={card.card.czech}
-            back={card.card.english}
-            flipped={flipped}
-            onFlip={flip}
-          />
+          <div ref={swipeRef} style={swipeStyle} className="relative">
+            {swipeIndicator && swipeIndicator.opacity > 0 && (
+              <div
+                className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none rounded-2xl"
+                style={{
+                  backgroundColor: `${swipeIndicator.color}20`,
+                  border: `2px solid ${swipeIndicator.color}`,
+                  opacity: swipeIndicator.opacity,
+                }}
+              >
+                <span
+                  className="text-2xl font-bold"
+                  style={{ color: swipeIndicator.color }}
+                >
+                  {swipeIndicator.label}
+                </span>
+              </div>
+            )}
+            <FlashCard
+              front={card.card.czech}
+              back={card.card.english}
+              flipped={flipped}
+              onFlip={flip}
+            />
+          </div>
 
           {/* Rating buttons with slide-up animation */}
           <div
@@ -70,7 +94,12 @@ export function StudyPage() {
           {/* Keyboard shortcut hint */}
           <div className="mt-8 text-xs text-[#6e6e73] hidden sm:block">
             <span className="mr-4">Space = flip</span>
-            <span>1-4 = rate</span>
+            <span>1-3 = rate</span>
+          </div>
+
+          {/* Mobile swipe hint */}
+          <div className="mt-6 text-xs text-[#6e6e73] sm:hidden text-center">
+            Swipe to rate: ← Hard · ↑ Good · → Easy
           </div>
         </>
       )}

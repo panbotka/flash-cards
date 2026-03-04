@@ -16,7 +16,7 @@ export function useKeyboardShortcuts(handlers: Record<string, () => void>) {
       if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault()
         handlers['space']?.()
-      } else if (e.key >= '1' && e.key <= '4') {
+      } else if (e.key >= '1' && e.key <= '3') {
         e.preventDefault()
         handlers[e.key]?.()
       }

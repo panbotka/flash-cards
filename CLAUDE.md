@@ -58,7 +58,8 @@ No ORM — all database access uses raw SQL with `database/sql`.
 - `frontend/src/api/client.ts` — All API types and fetch functions in one file. Generic `request<T>()` with 401 redirect handling.
 - `frontend/src/App.tsx` — Auth check on mount, protected routing, NavBar rendered on all routes except login.
 - `frontend/src/hooks/useStudySession.ts` — Core study flow: card fetching, flip state, review mutations, new-card continuation.
-- `frontend/src/hooks/useKeyboardShortcuts.ts` — Space (flip), 1-4 (rate), ignores input fields.
+- `frontend/src/hooks/useKeyboardShortcuts.ts` — Space (flip), 1-3 (rate), ignores input fields.
+- `frontend/src/hooks/useSwipeRating.ts` — Touch swipe gestures for mobile rating (left=Hard, up=Good, right=Easy).
 - Pages: `StudyPage`, `CardsPage`, `ImportPage`, `StatsPage`, `LoginPage`
 - Components: `FlashCard` (3D CSS flip), `RatingButtons`, `TagFilter`, `NavBar` (bottom tabs)
 
@@ -66,9 +67,9 @@ State management: TanStack Query for server state, local `useState` for UI state
 
 ### Key Domain Concepts
 
-**Single SRS state per card**: Each card has one `srs_state` row (direction `cz_en`). During study, Czech is shown first; the card can be flipped back and forth freely. Rating buttons appear after the first flip and remain visible.
+**Single SRS state per card**: Each card has one `srs_state` row (direction `cz_en`). During study, Czech is shown first; the card can be flipped back and forth freely. Rating buttons appear after the first flip and remain visible. On mobile, swipe gestures provide an alternative to buttons.
 
-**SM-2 state machine**: Cards progress through `new` → `learning` → `review`. Learning uses sub-day steps (1 min, 10 min). Review uses day-scale intervals multiplied by ease factor. "Again" rating on a review card sends it back to learning.
+**SM-2 state machine**: Cards progress through `new` → `learning` → `review`. Learning uses sub-day steps (1 min, 10 min). Review uses day-scale intervals multiplied by ease factor. The frontend sends ratings 2-4 (Hard/Good/Easy); the backend still accepts 1-4 but "Again" (1) is not exposed in the UI.
 
 **Stats accuracy values**: The API returns accuracy as a 0–1 fraction. The frontend multiplies by 100 for display.
 
