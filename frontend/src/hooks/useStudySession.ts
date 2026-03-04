@@ -6,7 +6,6 @@ import type { StudyCardResponse, StudyDoneResponse } from '../api/client'
 export function useStudySession(tag?: string, direction: string = 'cz_en') {
   const queryClient = useQueryClient()
   const [flipped, setFlipped] = useState(false)
-  const [revealed, setRevealed] = useState(false)
   const [showingNew, setShowingNew] = useState(false)
 
   const queryKey = ['study', 'next', { tag, direction, showingNew }]
@@ -24,7 +23,6 @@ export function useStudySession(tag?: string, direction: string = 'cz_en') {
       submitReview(srsStateId, rating),
     onSuccess: () => {
       setFlipped(false)
-      setRevealed(false)
       queryClient.invalidateQueries({ queryKey: ['study', 'next'] })
     },
   })
@@ -35,27 +33,24 @@ export function useStudySession(tag?: string, direction: string = 'cz_en') {
   const flip = useCallback(() => {
     if (!card) return
     setFlipped((prev) => !prev)
-    setRevealed(true)
   }, [card])
 
   const rate = useCallback(
     (rating: number) => {
-      if (!card || !revealed || reviewMutation.isPending) return
+      if (!card || reviewMutation.isPending) return
       reviewMutation.mutate({ srsStateId: card.srsState.id, rating })
     },
-    [card, revealed, reviewMutation],
+    [card, reviewMutation],
   )
 
   const showNewCards = useCallback(() => {
     setShowingNew(true)
     setFlipped(false)
-    setRevealed(false)
   }, [])
 
   return {
     card,
     flipped,
-    revealed,
     flip,
     rate,
     isDone: !!doneData,

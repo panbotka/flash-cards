@@ -182,7 +182,7 @@ export function StudyPage() {
         </select>
       </div>
 
-      {/* Key resets flipped/revealed/showingNew state when direction or tag changes */}
+      {/* Key resets flipped/showingNew state when direction or tag changes */}
       <div className="flex-1 min-h-0 flex flex-col items-center overflow-hidden">
         <StudyContent
           key={`${direction}-${selectedTag}`}
