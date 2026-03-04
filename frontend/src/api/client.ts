@@ -159,6 +159,19 @@ export function restoreCard(id: number) {
   return request<Card>(`/cards/${id}/restore`, { method: 'POST' })
 }
 
+export function renameTag(oldName: string, newName: string) {
+  return request<{ ok: boolean }>('/tags', {
+    method: 'PUT',
+    body: JSON.stringify({ oldName, newName }),
+  })
+}
+
+export function deleteTagWithCards(tag: string) {
+  return request<{ deleted: number }>(`/tags/${encodeURIComponent(tag)}`, {
+    method: 'DELETE',
+  })
+}
+
 // Study
 export function getNextCard(params?: { tag?: string; direction?: string }) {
   const sp = new URLSearchParams()

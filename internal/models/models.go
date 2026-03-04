@@ -72,6 +72,11 @@ type ImportCard struct {
 	English string `json:"english"`
 }
 
+type RenameTagRequest struct {
+	OldName string `json:"oldName" binding:"required"`
+	NewName string `json:"newName" binding:"required"`
+}
+
 type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }

@@ -24,6 +24,8 @@ func NewCardHandler(db *sql.DB) *CardHandler {
 // Register mounts card routes on the provided router group.
 func (h *CardHandler) Register(r *gin.RouterGroup) {
 	r.GET("/tags", h.ListTags)
+	r.PUT("/tags", h.RenameTag)
+	r.DELETE("/tags/:tag", h.DeleteTag)
 	r.GET("/cards", h.ListCards)
 	r.GET("/cards/:id", h.GetCard)
 	r.POST("/cards", h.CreateCard)
@@ -57,6 +59,73 @@ func (h *CardHandler) ListTags(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, tags)
+}
+
+// RenameTag renames a tag across all cards. Merges if the target tag already exists on some cards.
+func (h *CardHandler) RenameTag(c *gin.Context) {
+	var req models.RenameTagRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	req.OldName = strings.TrimSpace(req.OldName)
+	req.NewName = strings.TrimSpace(req.NewName)
+	if req.OldName == "" || req.NewName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "oldName and newName are required"})
+		return
+	}
+
+	tx, err := h.db.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to begin transaction"})
+		return
+	}
+	defer tx.Rollback()
+
+	// Delete duplicates where a card already has the new tag name.
+	if _, err := tx.Exec(
+		`DELETE FROM card_tags WHERE tag = ? AND card_id IN (SELECT card_id FROM card_tags WHERE tag = ?)`,
+		req.OldName, req.NewName,
+	); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to deduplicate tags"})
+		return
+	}
+
+	// Rename remaining.
+	if _, err := tx.Exec(`UPDATE card_tags SET tag = ? WHERE tag = ?`, req.NewName, req.OldName); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to rename tag"})
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit transaction"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// DeleteTag soft-deletes all cards that have the given tag.
+func (h *CardHandler) DeleteTag(c *gin.Context) {
+	tag := strings.TrimSpace(c.Param("tag"))
+	if tag == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "tag is required"})
+		return
+	}
+
+	now := time.Now().UTC()
+	result, err := h.db.Exec(
+		`UPDATE cards SET deleted_at = ?, updated_at = ? WHERE id IN (SELECT card_id FROM card_tags WHERE tag = ?) AND deleted_at IS NULL`,
+		now, now, tag,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete cards"})
+		return
+	}
+
+	count, _ := result.RowsAffected()
+	c.JSON(http.StatusOK, gin.H{"deleted": count})
 }
 
 // ListCards returns all non-deleted cards, optionally filtered by tag or search text.

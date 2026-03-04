@@ -106,13 +106,13 @@ function CardFormModal({
           </div>
 
           <div>
-            <label className="block text-xs text-text-tertiary mb-1.5">Tags (comma-separated)</label>
+            <label className="block text-xs text-text-tertiary mb-1.5">Tags (comma or space separated)</label>
             <input
               type="text"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               className="w-full rounded-xl bg-[#0a0a0a] border border-[#2a2a2a] px-4 py-3 text-white placeholder-text-tertiary focus:outline-none focus:border-accent transition-colors"
-              placeholder="food, verbs, travel"
+              placeholder="food verbs travel"
             />
           </div>
 
@@ -350,7 +350,7 @@ export function CardsPage() {
 
   function handleSave(data: CardFormData) {
     const parsedTags = data.tags
-      .split(',')
+      .split(/[,\s]+/)
       .map((t) => t.trim())
       .filter(Boolean)
 
@@ -382,94 +382,101 @@ export function CardsPage() {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] pb-20">
-      <div className="mx-auto max-w-lg px-4 pt-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <h1 className="text-2xl font-bold text-white">Cards</h1>
-          <button
-            onClick={() => navigate('/import')}
-            className="flex items-center gap-1.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] px-3 py-1.5 text-xs text-text-secondary hover:text-white transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
+    <div className="fixed inset-0 flex flex-col bg-[#0a0a0a]">
+      {/* Header area */}
+      <div className="shrink-0 px-4 pt-6">
+        <div className="max-w-lg mx-auto w-full">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5">
+            <h1 className="text-2xl font-bold text-white">Cards</h1>
+            <button
+              onClick={() => navigate('/import')}
+              className="flex items-center gap-1.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] px-3 py-1.5 text-xs text-text-secondary hover:text-white transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              Import
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="relative mb-3">
+            <svg
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            Import
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="relative mb-3">
-          <svg
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search cards..."
-            className="w-full rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] pl-10 pr-4 py-3 text-sm text-white placeholder-text-tertiary focus:outline-none focus:border-accent transition-colors"
-          />
-        </div>
-
-        {/* Tag filter */}
-        <div className="mb-4">
-          <TagFilter selectedTag={selectedTag} onSelectTag={setSelectedTag} />
-        </div>
-
-        {/* Card count */}
-        {cards && (
-          <p className="text-xs text-text-tertiary mb-3">
-            {cards.length} card{cards.length !== 1 ? 's' : ''}
-          </p>
-        )}
-
-        {/* Card list */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search cards..."
+              className="w-full rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] pl-10 pr-4 py-3 text-sm text-white placeholder-text-tertiary focus:outline-none focus:border-accent transition-colors"
+            />
           </div>
-        ) : cards && cards.length > 0 ? (
-          <div>
-            {cards.map((card) => (
-              <CardRow
-                key={card.id}
-                card={card}
-                onEdit={() => setModalCard(card)}
-                onDelete={() => handleDelete(card)}
-                onSuspendToggle={() => handleSuspendToggle(card)}
-              />
-            ))}
+
+          {/* Tag filter */}
+          <div className="mb-4">
+            <TagFilter selectedTag={selectedTag} onSelectTag={setSelectedTag} />
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-text-tertiary">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-3 opacity-40">
-              <rect x="3" y="3" width="18" height="18" rx="3" />
-              <line x1="9" y1="9" x2="15" y2="15" />
-              <line x1="15" y1="9" x2="9" y2="15" />
-            </svg>
-            <p className="text-sm">No cards found</p>
-          </div>
-        )}
+
+          {/* Card count */}
+          {cards && (
+            <p className="text-xs text-text-tertiary mb-3">
+              {cards.length} card{cards.length !== 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Scrollable card list */}
+      <div className="flex-1 overflow-y-auto px-4 pb-24">
+        <div className="max-w-lg mx-auto w-full">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+            </div>
+          ) : cards && cards.length > 0 ? (
+            <div>
+              {cards.map((card) => (
+                <CardRow
+                  key={card.id}
+                  card={card}
+                  onEdit={() => setModalCard(card)}
+                  onDelete={() => handleDelete(card)}
+                  onSuspendToggle={() => handleSuspendToggle(card)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-text-tertiary">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-3 opacity-40">
+                <rect x="3" y="3" width="18" height="18" rx="3" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+              </svg>
+              <p className="text-sm">No cards found</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* FAB - Add Card */}
       <button
         onClick={() => setModalCard(null)}
-        className="fixed bottom-24 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-accent shadow-lg shadow-accent/25 hover:bg-accent-hover transition-colors active:scale-95"
+        className="absolute bottom-24 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-accent shadow-lg shadow-accent/25 hover:bg-accent-hover transition-colors active:scale-95"
         aria-label="Add card"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
