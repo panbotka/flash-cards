@@ -50,7 +50,7 @@ export function StudyPage() {
             </div>
           )}
 
-          <div ref={swipeRef} style={swipeStyle} className="relative">
+          <div ref={swipeRef} style={swipeStyle} className="relative w-full max-w-md">
             {swipeIndicator && swipeIndicator.opacity > 0 && (
               <div
                 className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none rounded-2xl"
