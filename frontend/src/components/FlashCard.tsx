@@ -29,12 +29,14 @@ export function FlashCard({ front, back, direction, flipped, onFlip }: FlashCard
 
         {/* Back face */}
         <div className="backface-hidden rotate-y-180 absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] px-8 py-10">
-          <span className="absolute top-5 text-xs tracking-wide uppercase text-[#6e6e73]">
-            {direction}
-          </span>
-          <span className="text-3xl font-semibold text-white text-center leading-relaxed">
-            {back}
-          </span>
+          <div className={`flex flex-col items-center transition-opacity duration-0 ${flipped ? 'opacity-100 delay-300' : 'opacity-0'}`}>
+            <span className="absolute top-5 text-xs tracking-wide uppercase text-[#6e6e73]">
+              {direction}
+            </span>
+            <span className="text-3xl font-semibold text-white text-center leading-relaxed">
+              {back}
+            </span>
+          </div>
         </div>
       </div>
     </div>
