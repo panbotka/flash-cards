@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState, type CSSProperties, type RefCallback } from 'react'
+import { useRef, useCallback, useState, useEffect, type CSSProperties } from 'react'
 
 type Direction = 'left' | 'right' | 'up' | null
 
@@ -13,46 +13,58 @@ interface SwipeIndicator {
   opacity: number
 }
 
-const DIRECTION_THRESHOLD = 50
-const COMMIT_THRESHOLD = 100
+const DIRECTION_THRESHOLD = 30
+const COMMIT_THRESHOLD = 80
 
 const directionConfig: Record<NonNullable<Direction>, { rating: number; label: string; color: string }> = {
-  left: { rating: 2, label: 'Hard', color: '#ff9f0a' },
-  up: { rating: 3, label: 'Good', color: '#30d158' },
-  right: { rating: 4, label: 'Easy', color: '#5e9eff' },
+  left: { rating: 2, label: 'Hard', color: '#ff3b30' },
+  up: { rating: 3, label: 'Good', color: '#ffd60a' },
+  right: { rating: 4, label: 'Easy', color: '#30d158' },
 }
 
 export function useSwipeRating({ onRate, enabled }: UseSwipeRatingOptions) {
   const [swipeStyle, setSwipeStyle] = useState<CSSProperties>({})
   const [swipeIndicator, setSwipeIndicator] = useState<SwipeIndicator | null>(null)
+  const [el, setEl] = useState<HTMLDivElement | null>(null)
 
   const startX = useRef(0)
   const startY = useRef(0)
   const lockedDir = useRef<Direction>(null)
   const animating = useRef(false)
-  const elRef = useRef<HTMLDivElement | null>(null)
+  const enabledRef = useRef(enabled)
+  const onRateRef = useRef(onRate)
 
-  const handleTouchStart = useCallback(
-    (e: TouchEvent) => {
-      if (!enabled || animating.current) return
+  // Keep refs in sync via effect so event handlers always see latest values
+  useEffect(() => {
+    enabledRef.current = enabled
+    onRateRef.current = onRate
+  })
+
+  // Register native touch listeners (passive: false needed for iOS preventDefault)
+  useEffect(() => {
+    if (!el) return
+
+    function handleTouchStart(e: TouchEvent) {
+      if (!enabledRef.current || animating.current) return
       const touch = e.touches[0]
       startX.current = touch.clientX
       startY.current = touch.clientY
       lockedDir.current = null
       setSwipeStyle({ transition: 'none' })
       setSwipeIndicator(null)
-    },
-    [enabled],
-  )
+    }
 
-  const handleTouchMove = useCallback(
-    (e: TouchEvent) => {
-      if (!enabled || animating.current) return
+    function handleTouchMove(e: TouchEvent) {
+      if (!enabledRef.current || animating.current) return
+
+      // Prevent default immediately so iOS Safari doesn't claim the gesture
+      // for scrolling or edge-swipe navigation
+      e.preventDefault()
+
       const touch = e.touches[0]
       const dx = touch.clientX - startX.current
       const dy = touch.clientY - startY.current
 
-      // Detect direction once past threshold
       if (!lockedDir.current) {
         const absDx = Math.abs(dx)
         const absDy = Math.abs(dy)
@@ -67,8 +79,6 @@ export function useSwipeRating({ onRate, enabled }: UseSwipeRatingOptions) {
           return // down swipe — ignore
         }
       }
-
-      e.preventDefault()
 
       let translateX = 0
       let translateY = 0
@@ -98,84 +108,74 @@ export function useSwipeRating({ onRate, enabled }: UseSwipeRatingOptions) {
           opacity: Math.max(0, opacity),
         })
       })
-    },
-    [enabled],
-  )
-
-  const handleTouchEnd = useCallback(() => {
-    if (!enabled || !lockedDir.current) {
-      setSwipeStyle({})
-      setSwipeIndicator(null)
-      return
     }
 
-    const dir = lockedDir.current
-    const el = elRef.current
-    if (!el) return
-
-    // Get current translation from style
-    const transform = el.style.transform
-    let distance = 0
-    if (dir === 'up') {
-      const match = transform.match(/translate\([^,]+,\s*(-?[\d.]+)px/)
-      distance = match ? Math.abs(parseFloat(match[1])) : 0
-    } else {
-      const match = transform.match(/translate\((-?[\d.]+)px/)
-      distance = match ? Math.abs(parseFloat(match[1])) : 0
-    }
-
-    if (distance >= COMMIT_THRESHOLD) {
-      // Animate off-screen
-      animating.current = true
-      const config = directionConfig[dir]
-      let offX = 0
-      let offY = 0
-      if (dir === 'left') offX = -window.innerWidth
-      else if (dir === 'right') offX = window.innerWidth
-      else if (dir === 'up') offY = -window.innerHeight
-
-      const rotation = dir !== 'up' ? (offX / window.innerWidth) * 15 : 0
-
-      setSwipeStyle({
-        transition: 'transform 0.3s ease-out',
-        transform: `translate(${offX}px, ${offY}px) rotate(${rotation}deg)`,
-      })
-      setSwipeIndicator((prev) => prev ? { ...prev, opacity: 1 } : null)
-
-      setTimeout(() => {
-        onRate(config.rating)
-        animating.current = false
+    function handleTouchEnd() {
+      if (!enabledRef.current || !lockedDir.current) {
         setSwipeStyle({})
         setSwipeIndicator(null)
-      }, 300)
-    } else {
-      // Snap back
-      setSwipeStyle({
-        transition: 'transform 0.25s ease-out',
-        transform: 'translate(0px, 0px) rotate(0deg)',
-      })
-      setSwipeIndicator(null)
-      lockedDir.current = null
-    }
-  }, [enabled, onRate])
+        return
+      }
 
-  const swipeRef: RefCallback<HTMLDivElement> = useCallback(
-    (node) => {
-      // Cleanup previous
-      if (elRef.current) {
-        elRef.current.removeEventListener('touchstart', handleTouchStart)
-        elRef.current.removeEventListener('touchmove', handleTouchMove)
-        elRef.current.removeEventListener('touchend', handleTouchEnd)
+      const dir = lockedDir.current
+
+      const transform = el!.style.transform
+      let distance = 0
+      if (dir === 'up') {
+        const match = transform.match(/translate\([^,]+,\s*(-?[\d.]+)px/)
+        distance = match ? Math.abs(parseFloat(match[1])) : 0
+      } else {
+        const match = transform.match(/translate\((-?[\d.]+)px/)
+        distance = match ? Math.abs(parseFloat(match[1])) : 0
       }
-      elRef.current = node
-      if (node) {
-        node.addEventListener('touchstart', handleTouchStart, { passive: true })
-        node.addEventListener('touchmove', handleTouchMove, { passive: false })
-        node.addEventListener('touchend', handleTouchEnd)
+
+      if (distance >= COMMIT_THRESHOLD) {
+        animating.current = true
+        const config = directionConfig[dir]
+        let offX = 0
+        let offY = 0
+        if (dir === 'left') offX = -window.innerWidth
+        else if (dir === 'right') offX = window.innerWidth
+        else if (dir === 'up') offY = -window.innerHeight
+
+        const rotation = dir !== 'up' ? (offX / window.innerWidth) * 15 : 0
+
+        setSwipeStyle({
+          transition: 'transform 0.3s ease-out',
+          transform: `translate(${offX}px, ${offY}px) rotate(${rotation}deg)`,
+        })
+        setSwipeIndicator((prev) => prev ? { ...prev, opacity: 1 } : null)
+
+        setTimeout(() => {
+          onRateRef.current(config.rating)
+          animating.current = false
+          setSwipeStyle({})
+          setSwipeIndicator(null)
+        }, 300)
+      } else {
+        setSwipeStyle({
+          transition: 'transform 0.25s ease-out',
+          transform: 'translate(0px, 0px) rotate(0deg)',
+        })
+        setSwipeIndicator(null)
+        lockedDir.current = null
       }
-    },
-    [handleTouchStart, handleTouchMove, handleTouchEnd],
-  )
+    }
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true })
+    el.addEventListener('touchmove', handleTouchMove, { passive: false })
+    el.addEventListener('touchend', handleTouchEnd)
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart)
+      el.removeEventListener('touchmove', handleTouchMove)
+      el.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [el])
+
+  const swipeRef = useCallback((node: HTMLDivElement | null) => {
+    setEl(node)
+  }, [])
 
   return { swipeRef, swipeStyle, swipeIndicator }
 }

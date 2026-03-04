@@ -6,7 +6,7 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { useSwipeRating } from '../hooks/useSwipeRating'
 
 export function StudyPage() {
-  const { card, flipped, revealed, flip, rate, isDone, newAvailable, showNewCards, isLoading, isRating } =
+  const { card, flipped, flip, rate, isDone, newAvailable, showNewCards, isLoading, isRating } =
     useStudySession()
 
   const handlers = useMemo(
@@ -23,11 +23,11 @@ export function StudyPage() {
 
   const { swipeRef, swipeStyle, swipeIndicator } = useSwipeRating({
     onRate: rate,
-    enabled: revealed && !isRating,
+    enabled: !!card && !isRating,
   })
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-[#0a0a0a] px-4 pt-12 pb-20">
+    <div className="flex flex-col items-center h-screen bg-[#0a0a0a] px-4 pt-12 pb-20 overflow-hidden">
       {/* Loading skeleton */}
       {isLoading && (
         <div className="w-full max-w-md min-h-[280px] rounded-2xl bg-[#1a1a1a] border border-[#2a2a2a] animate-pulse" />
@@ -50,23 +50,16 @@ export function StudyPage() {
             </div>
           )}
 
-          <div ref={swipeRef} style={swipeStyle} className="relative w-full max-w-md">
+          <div ref={swipeRef} style={swipeStyle} className="relative w-full max-w-md touch-none">
             {swipeIndicator && swipeIndicator.opacity > 0 && (
               <div
-                className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none rounded-2xl"
+                className="absolute inset-0 z-10 pointer-events-none rounded-2xl"
                 style={{
                   backgroundColor: `${swipeIndicator.color}20`,
                   border: `2px solid ${swipeIndicator.color}`,
                   opacity: swipeIndicator.opacity,
                 }}
-              >
-                <span
-                  className="text-2xl font-bold"
-                  style={{ color: swipeIndicator.color }}
-                >
-                  {swipeIndicator.label}
-                </span>
-              </div>
+              />
             )}
             <FlashCard
               front={card.card.czech}
@@ -77,17 +70,11 @@ export function StudyPage() {
           </div>
 
           {/* Rating buttons with slide-up animation */}
-          <div
-            className={`mt-6 w-full flex justify-center transition-all duration-300 ease-out ${
-              revealed
-                ? 'opacity-100 translate-y-0'
-                : 'opacity-0 translate-y-4 pointer-events-none'
-            }`}
-          >
+          <div className="mt-6 w-full flex justify-center">
             <RatingButtons
               intervalHints={card.intervalHints}
               onRate={rate}
-              disabled={isRating || !revealed}
+              disabled={isRating}
             />
           </div>
 
