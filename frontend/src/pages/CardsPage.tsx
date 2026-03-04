@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getCards,
@@ -378,11 +379,26 @@ export function CardsPage() {
     }
   }
 
+  const navigate = useNavigate()
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] pb-20">
       <div className="mx-auto max-w-lg px-4 pt-6">
         {/* Header */}
-        <h1 className="text-2xl font-bold text-white mb-5">Cards</h1>
+        <div className="flex items-center justify-between mb-5">
+          <h1 className="text-2xl font-bold text-white">Cards</h1>
+          <button
+            onClick={() => navigate('/import')}
+            className="flex items-center gap-1.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] px-3 py-1.5 text-xs text-text-secondary hover:text-white transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Import
+          </button>
+        </div>
 
         {/* Search */}
         <div className="relative mb-3">
