@@ -66,7 +66,7 @@ State management: TanStack Query for server state, local `useState` for UI state
 
 ### Key Domain Concepts
 
-**Bidirectional cards**: Each card creates TWO `srs_state` rows — one for `cz_en` (Czech→English) and one for `en_cz` (English→Czech). They are reviewed independently.
+**Single SRS state per card**: Each card has one `srs_state` row (direction `cz_en`). During study, Czech is shown first; the card can be flipped back and forth freely. Rating buttons appear after the first flip and remain visible.
 
 **SM-2 state machine**: Cards progress through `new` → `learning` → `review`. Learning uses sub-day steps (1 min, 10 min). Review uses day-scale intervals multiplied by ease factor. "Again" rating on a review card sends it back to learning.
 

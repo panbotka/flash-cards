@@ -5,7 +5,7 @@ import { useStudySession } from '../hooks/useStudySession'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 
 export function StudyPage() {
-  const { card, flipped, flip, rate, isDone, newAvailable, showNewCards, isLoading, isRating } =
+  const { card, flipped, revealed, flip, rate, isDone, newAvailable, showNewCards, isLoading, isRating } =
     useStudySession()
 
   const handlers = useMemo(
@@ -20,15 +20,6 @@ export function StudyPage() {
   )
 
   useKeyboardShortcuts(handlers)
-
-  const directionLabel =
-    card?.srsState.direction === 'cz_en' ? 'Czech \u2192 English' : 'English \u2192 Czech'
-
-  const front =
-    card?.srsState.direction === 'cz_en' ? card.card.czech : card?.card.english ?? ''
-
-  const back =
-    card?.srsState.direction === 'cz_en' ? card.card.english : card?.card.czech ?? ''
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-[#0a0a0a] px-4 pt-12 pb-20">
@@ -55,9 +46,8 @@ export function StudyPage() {
           )}
 
           <FlashCard
-            front={front}
-            back={back}
-            direction={directionLabel}
+            front={card.card.czech}
+            back={card.card.english}
             flipped={flipped}
             onFlip={flip}
           />
@@ -65,7 +55,7 @@ export function StudyPage() {
           {/* Rating buttons with slide-up animation */}
           <div
             className={`mt-6 w-full flex justify-center transition-all duration-300 ease-out ${
-              flipped
+              revealed
                 ? 'opacity-100 translate-y-0'
                 : 'opacity-0 translate-y-4 pointer-events-none'
             }`}
@@ -73,7 +63,7 @@ export function StudyPage() {
             <RatingButtons
               intervalHints={card.intervalHints}
               onRate={rate}
-              disabled={isRating || !flipped}
+              disabled={isRating || !revealed}
             />
           </div>
 

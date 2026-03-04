@@ -3,19 +3,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getNextCard, getNewCard, submitReview, isStudyCard } from '../api/client'
 import type { StudyCardResponse, StudyDoneResponse } from '../api/client'
 
-export function useStudySession(tag?: string, direction?: string) {
+export function useStudySession(tag?: string) {
   const queryClient = useQueryClient()
   const [flipped, setFlipped] = useState(false)
+  const [revealed, setRevealed] = useState(false)
   const [showingNew, setShowingNew] = useState(false)
 
-  const queryKey = ['study', 'next', { tag, direction, showingNew }]
+  const queryKey = ['study', 'next', { tag, showingNew }]
 
   const { data, isLoading } = useQuery<StudyCardResponse | StudyDoneResponse>({
     queryKey,
     queryFn: () =>
       showingNew
-        ? getNewCard({ tag, direction })
-        : getNextCard({ tag, direction }),
+        ? getNewCard({ tag })
+        : getNextCard({ tag }),
   })
 
   const reviewMutation = useMutation({
@@ -23,6 +24,7 @@ export function useStudySession(tag?: string, direction?: string) {
       submitReview(srsStateId, rating),
     onSuccess: () => {
       setFlipped(false)
+      setRevealed(false)
       queryClient.invalidateQueries({ queryKey: ['study', 'next'] })
     },
   })
@@ -31,27 +33,29 @@ export function useStudySession(tag?: string, direction?: string) {
   const doneData = data && !isStudyCard(data) ? data : null
 
   const flip = useCallback(() => {
-    if (card && !flipped) {
-      setFlipped(true)
-    }
-  }, [card, flipped])
+    if (!card) return
+    setFlipped((prev) => !prev)
+    setRevealed(true)
+  }, [card])
 
   const rate = useCallback(
     (rating: number) => {
-      if (!card || !flipped || reviewMutation.isPending) return
+      if (!card || !revealed || reviewMutation.isPending) return
       reviewMutation.mutate({ srsStateId: card.srsState.id, rating })
     },
-    [card, flipped, reviewMutation],
+    [card, revealed, reviewMutation],
   )
 
   const showNewCards = useCallback(() => {
     setShowingNew(true)
     setFlipped(false)
+    setRevealed(false)
   }, [])
 
   return {
     card,
     flipped,
+    revealed,
     flip,
     rate,
     isDone: !!doneData,

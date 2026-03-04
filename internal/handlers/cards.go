@@ -203,15 +203,13 @@ func (h *CardHandler) CreateCard(c *gin.Context) {
 		}
 	}
 
-	// Create SRS states for both directions.
-	for _, dir := range []string{"cz_en", "en_cz"} {
-		if _, err := tx.Exec(
-			`INSERT INTO srs_state (card_id, direction, ease_factor, interval_days, repetitions, next_review, status, learning_step) VALUES (?, ?, 2.5, 0, 0, ?, 'new', 0)`,
-			cardID, dir, now,
-		); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to insert srs state"})
-			return
-		}
+	// Create SRS state for the card.
+	if _, err := tx.Exec(
+		`INSERT INTO srs_state (card_id, direction, ease_factor, interval_days, repetitions, next_review, status, learning_step) VALUES (?, 'cz_en', 2.5, 0, 0, ?, 'new', 0)`,
+		cardID, now,
+	); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to insert srs state"})
+		return
 	}
 
 	if err := tx.Commit(); err != nil {

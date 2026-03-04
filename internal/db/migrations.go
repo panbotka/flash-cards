@@ -65,6 +65,14 @@ CREATE INDEX idx_review_events_date ON review_events(reviewed_at);
 CREATE INDEX idx_cards_deleted ON cards(deleted_at);
 `,
 	},
+	{
+		version: 2,
+		sql: `
+-- Remove en_cz direction: each card now has a single SRS state (cz_en only).
+DELETE FROM review_events WHERE srs_state_id IN (SELECT id FROM srs_state WHERE direction = 'en_cz');
+DELETE FROM srs_state WHERE direction = 'en_cz';
+`,
+	},
 }
 
 // RunMigrations applies all pending schema migrations to the database.

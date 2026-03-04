@@ -31,24 +31,18 @@ func (h *StudyHandler) Register(r *gin.RouterGroup) {
 }
 
 // NextCard returns the next due card for review.
-// GET /api/study/next?tag=...&direction=cz_en|en_cz
+// GET /api/study/next?tag=...
 func (h *StudyHandler) NextCard(c *gin.Context) {
 	tag := strings.TrimSpace(c.Query("tag"))
-	direction := strings.TrimSpace(c.Query("direction"))
 
-	if direction != "" && direction != "cz_en" && direction != "en_cz" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "direction must be 'cz_en' or 'en_cz'"})
-		return
-	}
-
-	state, card, tags, found, err := h.findDueCard(tag, direction, false)
+	state, card, tags, found, err := h.findDueCard(tag, false)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch next card"})
 		return
 	}
 
 	if !found {
-		newCount, err := h.countNewCards(tag, direction)
+		newCount, err := h.countNewCards(tag)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to count new cards"})
 			return
@@ -65,17 +59,11 @@ func (h *StudyHandler) NextCard(c *gin.Context) {
 }
 
 // NewCard returns the next new (never-reviewed) card.
-// GET /api/study/new?tag=...&direction=cz_en|en_cz
+// GET /api/study/new?tag=...
 func (h *StudyHandler) NewCard(c *gin.Context) {
 	tag := strings.TrimSpace(c.Query("tag"))
-	direction := strings.TrimSpace(c.Query("direction"))
 
-	if direction != "" && direction != "cz_en" && direction != "en_cz" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "direction must be 'cz_en' or 'en_cz'"})
-		return
-	}
-
-	state, card, tags, found, err := h.findDueCard(tag, direction, true)
+	state, card, tags, found, err := h.findDueCard(tag, true)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch new card"})
 		return
@@ -173,7 +161,7 @@ func (h *StudyHandler) SubmitReview(c *gin.Context) {
 // findDueCard queries for the next card to study.
 // If newOnly is true, it returns only cards with status='new' and repetitions=0.
 // Otherwise, it returns cards where next_review <= now.
-func (h *StudyHandler) findDueCard(tag, direction string, newOnly bool) (models.SRSState, models.Card, []string, bool, error) {
+func (h *StudyHandler) findDueCard(tag string, newOnly bool) (models.SRSState, models.Card, []string, bool, error) {
 	var state models.SRSState
 	var card models.Card
 
@@ -191,11 +179,6 @@ func (h *StudyHandler) findDueCard(tag, direction string, newOnly bool) (models.
 	} else {
 		conditions = append(conditions, "s.next_review <= ?")
 		args = append(args, time.Now())
-	}
-
-	if direction != "" {
-		conditions = append(conditions, "s.direction = ?")
-		args = append(args, direction)
 	}
 
 	if tag != "" {
@@ -240,8 +223,8 @@ func (h *StudyHandler) findDueCard(tag, direction string, newOnly bool) (models.
 }
 
 // countNewCards counts cards with SRS status='new' and repetitions=0,
-// optionally filtered by tag and direction.
-func (h *StudyHandler) countNewCards(tag, direction string) (int, error) {
+// optionally filtered by tag.
+func (h *StudyHandler) countNewCards(tag string) (int, error) {
 	args := make([]interface{}, 0, 2)
 	var conditions []string
 	joinClause := ""
@@ -250,11 +233,6 @@ func (h *StudyHandler) countNewCards(tag, direction string) (int, error) {
 	conditions = append(conditions, "c.suspended = FALSE")
 	conditions = append(conditions, "s.status = 'new'")
 	conditions = append(conditions, "s.repetitions = 0")
-
-	if direction != "" {
-		conditions = append(conditions, "s.direction = ?")
-		args = append(args, direction)
-	}
 
 	if tag != "" {
 		joinClause = "JOIN card_tags ct ON ct.card_id = c.id"

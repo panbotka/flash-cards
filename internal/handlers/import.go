@@ -168,16 +168,14 @@ func (h *ImportHandler) Commit(c *gin.Context) {
 			}
 		}
 
-		// Create SRS state entries for both directions.
-		for _, direction := range []string{"cz_en", "en_cz"} {
-			if _, err := tx.Exec(
-				`INSERT INTO srs_state (card_id, direction, ease_factor, interval_days, repetitions, next_review, status, learning_step)
-				 VALUES (?, ?, 2.5, 0, 0, ?, 'new', 0)`,
-				cardID, direction, now,
-			); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create srs state"})
-				return
-			}
+		// Create SRS state for the card.
+		if _, err := tx.Exec(
+			`INSERT INTO srs_state (card_id, direction, ease_factor, interval_days, repetitions, next_review, status, learning_step)
+			 VALUES (?, 'cz_en', 2.5, 0, 0, ?, 'new', 0)`,
+			cardID, now,
+		); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create srs state"})
+			return
 		}
 
 		imported++

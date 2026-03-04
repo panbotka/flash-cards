@@ -156,18 +156,16 @@ export function restoreCard(id: number) {
 }
 
 // Study
-export function getNextCard(params?: { tag?: string; direction?: string }) {
+export function getNextCard(params?: { tag?: string }) {
   const sp = new URLSearchParams()
   if (params?.tag) sp.set('tag', params.tag)
-  if (params?.direction) sp.set('direction', params.direction)
   const qs = sp.toString()
   return request<StudyCardResponse | StudyDoneResponse>(`/study/next${qs ? `?${qs}` : ''}`)
 }
 
-export function getNewCard(params?: { tag?: string; direction?: string }) {
+export function getNewCard(params?: { tag?: string }) {
   const sp = new URLSearchParams()
   if (params?.tag) sp.set('tag', params.tag)
-  if (params?.direction) sp.set('direction', params.direction)
   const qs = sp.toString()
   return request<StudyCardResponse | StudyDoneResponse>(`/study/new${qs ? `?${qs}` : ''}`)
 }

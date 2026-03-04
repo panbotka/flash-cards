@@ -224,8 +224,7 @@ func (h *StatsHandler) Accuracy(c *gin.Context) {
 // Maturity returns the distribution of cards by SRS maturity level.
 // GET /api/stats/maturity
 //
-// A card's maturity is determined by the "worst" status across its two directions:
-// new < learning < young (review, interval < 21) < mature (review, interval >= 21).
+// Maturity buckets: new < learning < young (review, interval < 21) < mature (review, interval >= 21).
 func (h *StatsHandler) Maturity(c *gin.Context) {
 	// For each non-deleted, non-suspended card, find the worst maturity bucket
 	// across its directions. We assign a numeric rank:
