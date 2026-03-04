@@ -5,9 +5,9 @@ interface RatingButtonsProps {
 }
 
 const ratings = [
-  { rating: 2, label: 'Hard', color: '#ff3b30' },
-  { rating: 3, label: 'Good', color: '#ffd60a' },
   { rating: 4, label: 'Easy', color: '#30d158' },
+  { rating: 3, label: 'Good', color: '#ffd60a' },
+  { rating: 2, label: 'Hard', color: '#ff3b30' },
 ] as const
 
 export function RatingButtons({ intervalHints, onRate, disabled }: RatingButtonsProps) {

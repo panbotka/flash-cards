@@ -59,7 +59,7 @@ No ORM — all database access uses raw SQL with `database/sql`.
 - `frontend/src/App.tsx` — Auth check on mount, protected routing, NavBar rendered on all routes except login.
 - `frontend/src/hooks/useStudySession.ts` — Core study flow: card fetching, flip state, review mutations, new-card continuation. Accepts `direction` and `tag` params.
 - `frontend/src/hooks/useKeyboardShortcuts.ts` — Space (flip), 1-3 (rate), ignores input fields.
-- `frontend/src/hooks/useSwipeRating.ts` — Touch swipe gestures for mobile rating (left=Hard, up=Good, right=Easy). Uses native touch listeners with `passive: false` and immediate `preventDefault()` for iOS Safari compatibility. Reads `enabled`/`onRate` via refs to keep listeners stable. Swipe-off animates card out with fade, new card fades in.
+- `frontend/src/hooks/useSwipeRating.ts` — Touch swipe gestures for mobile rating (left=Easy, up=Good, right=Hard). Uses native touch listeners with `passive: false` and immediate `preventDefault()` for iOS Safari compatibility. Reads `enabled`/`onRate` via refs to keep listeners stable. Swipe-off animates card out with fade, new card fades in.
 - Pages: `StudyPage`, `CardsPage`, `ImportPage`, `StatsPage`, `LoginPage`
 - Components: `FlashCard` (3D CSS flip), `RatingButtons`, `TagFilter`, `NavBar` (bottom tabs)
 

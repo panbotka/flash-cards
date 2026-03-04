@@ -17,9 +17,9 @@ const DIRECTION_THRESHOLD = 30
 const COMMIT_THRESHOLD = 80
 
 const directionConfig: Record<NonNullable<Direction>, { rating: number; label: string; color: string }> = {
-  left: { rating: 2, label: 'Hard', color: '#ff3b30' },
+  left: { rating: 4, label: 'Easy', color: '#30d158' },
   up: { rating: 3, label: 'Good', color: '#ffd60a' },
-  right: { rating: 4, label: 'Easy', color: '#30d158' },
+  right: { rating: 2, label: 'Hard', color: '#ff3b30' },
 }
 
 export function useSwipeRating({ onRate, enabled }: UseSwipeRatingOptions) {
