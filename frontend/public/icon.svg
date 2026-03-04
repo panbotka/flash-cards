@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Back card gradient: blue to purple -->
+    <linearGradient id="backCard" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5e9eff"/>
+      <stop offset="100%" stop-color="#8B7EFF"/>
+    </linearGradient>
+    <!-- Front card gradient: coral to warm pink -->
+    <linearGradient id="frontCard" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B6B"/>
+      <stop offset="100%" stop-color="#FF8E8E"/>
+    </linearGradient>
+    <!-- Sparkle gradient -->
+    <linearGradient id="sparkle" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA500"/>
+    </linearGradient>
+    <!-- Subtle shadow -->
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Back card (rotated -8°) -->
+  <g transform="rotate(-8, 256, 270)">
+    <rect x="100" y="90" width="280" height="360" rx="28" ry="28"
+          fill="url(#backCard)" filter="url(#shadow)"/>
+    <!-- Subtle line details on back card -->
+    <rect x="140" y="160" width="140" height="12" rx="6" fill="white" opacity="0.3"/>
+    <rect x="140" y="190" width="100" height="12" rx="6" fill="white" opacity="0.2"/>
+  </g>
+
+  <!-- Front card (rotated 6°) -->
+  <g transform="rotate(6, 256, 270)">
+    <rect x="130" y="100" width="280" height="360" rx="28" ry="28"
+          fill="url(#frontCard)" filter="url(#shadow)"/>
+    <!-- Subtle line details on front card -->
+    <rect x="170" y="180" width="150" height="14" rx="7" fill="white" opacity="0.35"/>
+    <rect x="170" y="212" width="110" height="14" rx="7" fill="white" opacity="0.25"/>
+    <!-- Divider line -->
+    <line x1="170" y1="260" x2="370" y2="260" stroke="white" stroke-opacity="0.2" stroke-width="2"/>
+    <!-- Bottom text hints -->
+    <rect x="170" y="290" width="130" height="14" rx="7" fill="white" opacity="0.3"/>
+    <rect x="170" y="322" width="90" height="14" rx="7" fill="white" opacity="0.2"/>
+  </g>
+
+  <!-- Sparkle star (top right) -->
+  <g transform="translate(400, 80)">
+    <!-- 4-point star -->
+    <path d="M0,-22 L5,-5 L22,0 L5,5 L0,22 L-5,5 L-22,0 L-5,-5 Z"
+          fill="url(#sparkle)" opacity="0.9"/>
+  </g>
+
+  <!-- Small sparkle -->
+  <g transform="translate(440, 140) scale(0.45)">
+    <path d="M0,-22 L5,-5 L22,0 L5,5 L0,22 L-5,5 L-22,0 L-5,-5 Z"
+          fill="#FFD700" opacity="0.6"/>
+  </g>
+</svg>

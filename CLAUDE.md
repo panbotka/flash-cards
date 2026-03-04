@@ -72,6 +72,19 @@ State management: TanStack Query for server state, local `useState` for UI state
 
 **Stats accuracy values**: The API returns accuracy as a 0–1 fraction. The frontend multiplies by 100 for display.
 
+## PWA & Icons
+
+The app is PWA-installable. Static assets in `frontend/public/`:
+
+- `icon.svg` — Main favicon (SVG, scales to any size)
+- `icon-180.png` — Apple touch icon
+- `icon-192.png`, `icon-512.png` — Standard PWA icons
+- `icon-maskable-192.png`, `icon-maskable-512.png` — Maskable icons for Android adaptive icons (content in 80% safe zone, dark bg)
+- `icon-maskable.svg` — Source SVG for maskable variants
+- `manifest.json` — Web app manifest (standalone display, dark theme)
+
+`index.html` links the manifest, apple-touch-icon, and SVG favicon.
+
 ## Vite Dev Proxy
 
 When running `npm run dev` in `frontend/`, API calls to `/api` are proxied to `http://localhost:3011` (configured in `vite.config.ts`). Run the Go backend separately via `APP_PORT=3011 ./bin/flash-cards`.

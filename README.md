@@ -10,6 +10,7 @@ A Czech-English vocabulary study tool with spaced repetition (SM-2). Single Go b
 - **Statistics** — Activity heatmap, accuracy tracking, maturity distribution, forecast, and hardest cards
 - **Tag filtering** — Organize cards with tags and filter study sessions
 - **Dark UI** — Mobile-first Apple-style dark interface with 3D card flip animations
+- **PWA support** — Installable as a standalone app on mobile and desktop
 
 ## Quick Start
 
