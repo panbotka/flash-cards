@@ -140,18 +140,29 @@ export function useSwipeRating({ onRate, enabled }: UseSwipeRatingOptions) {
 
         const rotation = dir !== 'up' ? (offX / window.innerWidth) * 15 : 0
 
+        // Fly off and fade out
         setSwipeStyle({
-          transition: 'transform 0.3s ease-out',
+          transition: 'transform 0.25s ease-out, opacity 0.25s ease-out',
           transform: `translate(${offX}px, ${offY}px) rotate(${rotation}deg)`,
+          opacity: 0,
         })
         setSwipeIndicator((prev) => prev ? { ...prev, opacity: 1 } : null)
 
         setTimeout(() => {
           onRateRef.current(config.rating)
-          animating.current = false
-          setSwipeStyle({})
+          // Start new card invisible, then fade in
+          setSwipeStyle({ opacity: 0, transition: 'none' })
           setSwipeIndicator(null)
-        }, 300)
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setSwipeStyle({
+                opacity: 1,
+                transition: 'opacity 0.2s ease-in',
+              })
+              animating.current = false
+            })
+          })
+        }, 250)
       } else {
         setSwipeStyle({
           transition: 'transform 0.25s ease-out',

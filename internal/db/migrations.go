@@ -73,6 +73,17 @@ DELETE FROM review_events WHERE srs_state_id IN (SELECT id FROM srs_state WHERE 
 DELETE FROM srs_state WHERE direction = 'en_cz';
 `,
 	},
+	{
+		version: 3,
+		sql: `
+-- Re-create en_cz SRS states for all existing cards that lack one.
+INSERT INTO srs_state (card_id, direction, ease_factor, interval_days, repetitions, next_review, status, learning_step)
+SELECT c.id, 'en_cz', 2.5, 0, 0, CURRENT_TIMESTAMP, 'new', 0
+FROM cards c
+WHERE c.deleted_at IS NULL
+  AND NOT EXISTS (SELECT 1 FROM srs_state s WHERE s.card_id = c.id AND s.direction = 'en_cz');
+`,
+	},
 }
 
 // RunMigrations applies all pending schema migrations to the database.

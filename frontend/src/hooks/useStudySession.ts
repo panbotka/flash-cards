@@ -3,20 +3,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getNextCard, getNewCard, submitReview, isStudyCard } from '../api/client'
 import type { StudyCardResponse, StudyDoneResponse } from '../api/client'
 
-export function useStudySession(tag?: string) {
+export function useStudySession(tag?: string, direction: string = 'cz_en') {
   const queryClient = useQueryClient()
   const [flipped, setFlipped] = useState(false)
   const [revealed, setRevealed] = useState(false)
   const [showingNew, setShowingNew] = useState(false)
 
-  const queryKey = ['study', 'next', { tag, showingNew }]
+  const queryKey = ['study', 'next', { tag, direction, showingNew }]
 
   const { data, isLoading } = useQuery<StudyCardResponse | StudyDoneResponse>({
     queryKey,
     queryFn: () =>
       showingNew
-        ? getNewCard({ tag })
-        : getNextCard({ tag }),
+        ? getNewCard({ tag, direction })
+        : getNextCard({ tag, direction }),
   })
 
   const reviewMutation = useMutation({

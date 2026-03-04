@@ -123,6 +123,10 @@ export interface HardestCard {
   accuracy: number
 }
 
+export function getTags() {
+  return request<string[]>('/tags')
+}
+
 export function getCards(params?: { tag?: string; search?: string }) {
   const sp = new URLSearchParams()
   if (params?.tag) sp.set('tag', params.tag)
@@ -156,16 +160,18 @@ export function restoreCard(id: number) {
 }
 
 // Study
-export function getNextCard(params?: { tag?: string }) {
+export function getNextCard(params?: { tag?: string; direction?: string }) {
   const sp = new URLSearchParams()
   if (params?.tag) sp.set('tag', params.tag)
+  if (params?.direction) sp.set('direction', params.direction)
   const qs = sp.toString()
   return request<StudyCardResponse | StudyDoneResponse>(`/study/next${qs ? `?${qs}` : ''}`)
 }
 
-export function getNewCard(params?: { tag?: string }) {
+export function getNewCard(params?: { tag?: string; direction?: string }) {
   const sp = new URLSearchParams()
   if (params?.tag) sp.set('tag', params.tag)
+  if (params?.direction) sp.set('direction', params.direction)
   const qs = sp.toString()
   return request<StudyCardResponse | StudyDoneResponse>(`/study/new${qs ? `?${qs}` : ''}`)
 }

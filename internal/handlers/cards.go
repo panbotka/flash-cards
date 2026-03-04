@@ -23,6 +23,7 @@ func NewCardHandler(db *sql.DB) *CardHandler {
 
 // Register mounts card routes on the provided router group.
 func (h *CardHandler) Register(r *gin.RouterGroup) {
+	r.GET("/tags", h.ListTags)
 	r.GET("/cards", h.ListCards)
 	r.GET("/cards/:id", h.GetCard)
 	r.POST("/cards", h.CreateCard)
@@ -30,6 +31,32 @@ func (h *CardHandler) Register(r *gin.RouterGroup) {
 	r.DELETE("/cards/:id", h.DeleteCard)
 	r.POST("/cards/:id/suspend", h.ToggleSuspend)
 	r.POST("/cards/:id/restore", h.RestoreCard)
+}
+
+// ListTags returns all distinct tags from non-deleted cards.
+func (h *CardHandler) ListTags(c *gin.Context) {
+	rows, err := h.db.Query(`SELECT DISTINCT tag FROM card_tags WHERE card_id IN (SELECT id FROM cards WHERE deleted_at IS NULL) ORDER BY tag`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query tags"})
+		return
+	}
+	defer rows.Close()
+
+	tags := []string{}
+	for rows.Next() {
+		var tag string
+		if err := rows.Scan(&tag); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to scan tag"})
+			return
+		}
+		tags = append(tags, tag)
+	}
+	if err := rows.Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to iterate tags"})
+		return
+	}
+
+	c.JSON(http.StatusOK, tags)
 }
 
 // ListCards returns all non-deleted cards, optionally filtered by tag or search text.
@@ -203,13 +230,15 @@ func (h *CardHandler) CreateCard(c *gin.Context) {
 		}
 	}
 
-	// Create SRS state for the card.
-	if _, err := tx.Exec(
-		`INSERT INTO srs_state (card_id, direction, ease_factor, interval_days, repetitions, next_review, status, learning_step) VALUES (?, 'cz_en', 2.5, 0, 0, ?, 'new', 0)`,
-		cardID, now,
-	); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to insert srs state"})
-		return
+	// Create SRS states for both directions.
+	for _, dir := range []string{"cz_en", "en_cz"} {
+		if _, err := tx.Exec(
+			`INSERT INTO srs_state (card_id, direction, ease_factor, interval_days, repetitions, next_review, status, learning_step) VALUES (?, ?, 2.5, 0, 0, ?, 'new', 0)`,
+			cardID, dir, now,
+		); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to insert srs state"})
+			return
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

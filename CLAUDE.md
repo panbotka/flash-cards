@@ -44,8 +44,8 @@ CGO is required (`CGO_ENABLED=1`) because of the `mattn/go-sqlite3` driver.
 - `internal/srs/sm2.go` — SM-2 spaced repetition algorithm. `ProcessReview()` is pure (returns new state, doesn't mutate input).
 - `internal/handlers/` — Five handler files, each with a struct holding `*sql.DB` and a `Register(r *gin.RouterGroup)` method:
   - `auth.go` — Login/logout/check
-  - `cards.go` — CRUD, suspend, restore
-  - `study.go` — Next card selection, review submission, new card introduction
+  - `cards.go` — CRUD, suspend, restore, `GET /tags` for distinct tag list
+  - `study.go` — Next card selection (with `?direction=` and `?tag=` filters), review submission, new card introduction
   - `import.go` — Bulk import with preview/commit pattern
   - `stats.go` — Six analytics endpoints
 - `internal/auth/auth.go` — HMAC-SHA256 session cookies. Middleware skips `/api/auth/login` and `/api/auth/check`.
@@ -57,9 +57,9 @@ No ORM — all database access uses raw SQL with `database/sql`.
 
 - `frontend/src/api/client.ts` — All API types and fetch functions in one file. Generic `request<T>()` with 401 redirect handling.
 - `frontend/src/App.tsx` — Auth check on mount, protected routing, NavBar rendered on all routes except login.
-- `frontend/src/hooks/useStudySession.ts` — Core study flow: card fetching, flip state, review mutations, new-card continuation.
+- `frontend/src/hooks/useStudySession.ts` — Core study flow: card fetching, flip state, review mutations, new-card continuation. Accepts `direction` and `tag` params.
 - `frontend/src/hooks/useKeyboardShortcuts.ts` — Space (flip), 1-3 (rate), ignores input fields.
-- `frontend/src/hooks/useSwipeRating.ts` — Touch swipe gestures for mobile rating (left=Hard, up=Good, right=Easy). Uses native touch listeners with `passive: false` and immediate `preventDefault()` for iOS Safari compatibility. Reads `enabled`/`onRate` via refs to keep listeners stable.
+- `frontend/src/hooks/useSwipeRating.ts` — Touch swipe gestures for mobile rating (left=Hard, up=Good, right=Easy). Uses native touch listeners with `passive: false` and immediate `preventDefault()` for iOS Safari compatibility. Reads `enabled`/`onRate` via refs to keep listeners stable. Swipe-off animates card out with fade, new card fades in.
 - Pages: `StudyPage`, `CardsPage`, `ImportPage`, `StatsPage`, `LoginPage`
 - Components: `FlashCard` (3D CSS flip), `RatingButtons`, `TagFilter`, `NavBar` (bottom tabs)
 
@@ -67,7 +67,7 @@ State management: TanStack Query for server state, local `useState` for UI state
 
 ### Key Domain Concepts
 
-**Single SRS state per card**: Each card has one `srs_state` row (direction `cz_en`). During study, Czech is shown first; the card can be flipped back and forth freely. Rating buttons are always visible (no need to flip first). On mobile, swipe gestures work immediately without flipping. The study page is non-scrollable (`h-screen overflow-hidden`).
+**Dual SRS states per card**: Each card has two `srs_state` rows (`cz_en` and `en_cz`) with independent progress. The study page has a direction toggle (CZ→EN / EN→CZ) and a tag filter dropdown. The `StudyContent` component is keyed by `direction-tag` so UI state resets on change. Front/back props on `FlashCard` are swapped based on direction. Rating buttons are always visible (no need to flip first). On mobile, swipe gestures work immediately without flipping. The study page is non-scrollable (`fixed inset-0 overflow-hidden`).
 
 **SM-2 state machine**: Cards progress through `new` → `learning` → `review`. Learning uses sub-day steps (1 min, 10 min). Review uses day-scale intervals multiplied by ease factor. The frontend sends ratings 2-4 (Hard/Good/Easy); the backend still accepts 1-4 but "Again" (1) is not exposed in the UI.
 
