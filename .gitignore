@@ -1,0 +1,9 @@
+bin/
+data/
+frontend/node_modules/
+frontend/dist/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.env
