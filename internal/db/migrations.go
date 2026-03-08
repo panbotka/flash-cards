@@ -84,6 +84,16 @@ WHERE c.deleted_at IS NULL
   AND NOT EXISTS (SELECT 1 FROM srs_state s WHERE s.card_id = c.id AND s.direction = 'en_cz');
 `,
 	},
+	{
+		version: 4,
+		sql: `
+-- Add full before-state columns to review_events for undo support.
+ALTER TABLE review_events ADD COLUMN status_before TEXT;
+ALTER TABLE review_events ADD COLUMN learning_step_before INTEGER;
+ALTER TABLE review_events ADD COLUMN repetitions_before INTEGER;
+ALTER TABLE review_events ADD COLUMN next_review_before DATETIME;
+`,
+	},
 }
 
 // RunMigrations applies all pending schema migrations to the database.

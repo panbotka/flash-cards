@@ -8,7 +8,7 @@ import { useSwipeRating } from '../hooks/useSwipeRating'
 import { getTags } from '../api/client'
 
 function StudyContent({ direction, tag }: { direction: 'cz_en' | 'en_cz'; tag?: string }) {
-  const { card, flipped, flip, rate, isDone, newAvailable, showNewCards, isLoading, isRating } =
+  const { card, flipped, flip, rate, isDone, newAvailable, showNewCards, isLoading, isRating, canUndo, undo } =
     useStudySession(tag, direction)
 
   const handlers = useMemo(
@@ -87,14 +87,24 @@ function StudyContent({ direction, tag }: { direction: 'cz_en' | 'en_cz'; tag?: 
             />
           </div>
 
+          {/* Undo button */}
+          {canUndo && (
+            <button
+              onClick={undo}
+              className="mt-4 text-xs text-[#6e6e73] hover:text-[#a1a1a6] transition-colors"
+            >
+              Undo last rating
+            </button>
+          )}
+
           {/* Keyboard shortcut hint */}
-          <div className="mt-8 text-xs text-[#6e6e73] hidden sm:block">
+          <div className="mt-4 text-xs text-[#6e6e73] hidden sm:block">
             <span className="mr-4">Space = flip</span>
             <span>1-3 = rate</span>
           </div>
 
           {/* Mobile swipe hint */}
-          <div className="mt-6 text-xs text-[#6e6e73] sm:hidden text-center">
+          <div className="mt-4 text-xs text-[#6e6e73] sm:hidden text-center">
             Swipe to rate: ← Hard · ↑ Good · → Easy
           </div>
         </>

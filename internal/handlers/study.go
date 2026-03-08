@@ -27,6 +27,7 @@ func NewStudyHandler(db *sql.DB) *StudyHandler {
 func (h *StudyHandler) Register(r *gin.RouterGroup) {
 	r.GET("/study/next", h.NextCard)
 	r.POST("/study/review", h.SubmitReview)
+	r.POST("/study/undo", h.UndoReview)
 	r.GET("/study/new", h.NewCard)
 }
 
@@ -126,9 +127,8 @@ func (h *StudyHandler) SubmitReview(c *gin.Context) {
 		return
 	}
 
-	// Snapshot before values for the review event.
-	intervalBefore := state.IntervalDays
-	easeBefore := state.EaseFactor
+	// Snapshot full before-state for the review event (enables undo).
+	beforeState := state
 
 	// Compute the new state.
 	newState := srs.ProcessReview(&state, req.Rating)
@@ -149,15 +149,17 @@ func (h *StudyHandler) SubmitReview(c *gin.Context) {
 		return
 	}
 
-	// Record the review event.
+	// Record the review event with full before-state for undo support.
 	_, err = h.db.Exec(`
 		INSERT INTO review_events
 			(srs_state_id, card_id, direction, rating, reviewed_at,
-			 interval_before, interval_after, ease_before, ease_after)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 interval_before, interval_after, ease_before, ease_after,
+			 status_before, learning_step_before, repetitions_before, next_review_before)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		newState.ID, newState.CardID, newState.Direction, req.Rating, time.Now(),
-		intervalBefore, newState.IntervalDays, easeBefore, newState.EaseFactor,
+		beforeState.IntervalDays, newState.IntervalDays, beforeState.EaseFactor, newState.EaseFactor,
+		beforeState.Status, beforeState.LearningStep, beforeState.Repetitions, beforeState.NextReview,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to record review event"})
@@ -171,6 +173,144 @@ func (h *StudyHandler) SubmitReview(c *gin.Context) {
 		SRSState:     newState,
 		NextInterval: nextInterval,
 	})
+}
+
+// UndoReview reverts the most recent review for the given direction/tag.
+// POST /api/study/undo?direction=...&tag=...
+func (h *StudyHandler) UndoReview(c *gin.Context) {
+	direction := c.DefaultQuery("direction", "cz_en")
+	if !validDirection(direction) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid direction"})
+		return
+	}
+	tag := strings.TrimSpace(c.Query("tag"))
+
+	// Find the most recent review event for this direction (and optional tag).
+	args := []interface{}{direction}
+	tagJoin := ""
+	tagWhere := ""
+	if tag != "" {
+		tagJoin = "JOIN card_tags ct ON ct.card_id = re.card_id"
+		tagWhere = "AND ct.tag = ?"
+		args = append(args, tag)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT re.id, re.srs_state_id, re.card_id,
+		       re.interval_before, re.ease_before,
+		       re.status_before, re.learning_step_before,
+		       re.repetitions_before, re.next_review_before
+		FROM review_events re
+		%s
+		WHERE re.direction = ? %s
+		ORDER BY re.reviewed_at DESC
+		LIMIT 1
+	`, tagJoin, tagWhere)
+
+	var (
+		eventID          int64
+		srsStateID       int64
+		cardID           int64
+		intervalBefore   *float64
+		easeBefore       *float64
+		statusBefore     *string
+		learningStepBef  *int
+		repetitionsBef   *int
+		nextReviewBefore *time.Time
+	)
+	err := h.db.QueryRow(query, args...).Scan(
+		&eventID, &srsStateID, &cardID,
+		&intervalBefore, &easeBefore,
+		&statusBefore, &learningStepBef,
+		&repetitionsBef, &nextReviewBefore,
+	)
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no review to undo"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find review event"})
+		return
+	}
+
+	// Require full before-state (old events before migration 4 won't have these).
+	if statusBefore == nil || learningStepBef == nil || repetitionsBef == nil || nextReviewBefore == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no review to undo"})
+		return
+	}
+
+	// Restore the SRS state and delete the review event in a transaction.
+	tx, err := h.db.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to begin transaction"})
+		return
+	}
+
+	_, err = tx.Exec(`
+		UPDATE srs_state
+		SET ease_factor = ?, interval_days = ?, repetitions = ?,
+		    next_review = ?, status = ?, learning_step = ?
+		WHERE id = ?
+	`, *easeBefore, *intervalBefore, *repetitionsBef,
+		*nextReviewBefore, *statusBefore, *learningStepBef,
+		srsStateID,
+	)
+	if err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to restore SRS state"})
+		return
+	}
+
+	_, err = tx.Exec("DELETE FROM review_events WHERE id = ?", eventID)
+	if err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete review event"})
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit undo"})
+		return
+	}
+
+	// Return the restored card for re-display.
+	var card models.Card
+	err = h.db.QueryRow(`
+		SELECT id, czech, english, deleted_at, suspended, created_at, updated_at
+		FROM cards WHERE id = ?
+	`, cardID).Scan(
+		&card.ID, &card.Czech, &card.English, &card.DeletedAt, &card.Suspended,
+		&card.CreatedAt, &card.UpdatedAt,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch card"})
+		return
+	}
+
+	tags, err := h.fetchCardTags(cardID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch tags"})
+		return
+	}
+	card.Tags = tags
+
+	// Fetch the restored SRS state.
+	var state models.SRSState
+	err = h.db.QueryRow(`
+		SELECT id, card_id, direction, ease_factor, interval_days,
+		       repetitions, next_review, status, learning_step
+		FROM srs_state WHERE id = ?
+	`, srsStateID).Scan(
+		&state.ID, &state.CardID, &state.Direction,
+		&state.EaseFactor, &state.IntervalDays,
+		&state.Repetitions, &state.NextReview, &state.Status, &state.LearningStep,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch restored state"})
+		return
+	}
+
+	h.respondWithStudyCard(c, card, state)
 }
 
 // findDueCard queries for the next card to study.

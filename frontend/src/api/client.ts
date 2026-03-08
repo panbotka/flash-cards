@@ -196,6 +196,16 @@ export function submitReview(srsStateId: number, rating: number) {
   })
 }
 
+export function undoReview(params?: { tag?: string; direction?: string }) {
+  const sp = new URLSearchParams()
+  if (params?.tag) sp.set('tag', params.tag)
+  if (params?.direction) sp.set('direction', params.direction)
+  const qs = sp.toString()
+  return request<StudyCardResponse>(`/study/undo${qs ? `?${qs}` : ''}`, {
+    method: 'POST',
+  })
+}
+
 // Import
 export function importPreview(content: string) {
   return request<ImportPreviewResponse>('/cards/import/preview', {
