@@ -8,4 +8,4 @@
 - [x] Add daily study goal ([spec](docs/specs/daily-goal.md))
 - [x] Add unit tests for SM-2 algorithm and importer ([spec](docs/specs/unit-tests-sm2-importer.md))
 - [x] Add test infrastructure and cards API integration tests ([spec](docs/specs/integration-tests-cards.md))
-- [ ] Add study API integration tests ([spec](docs/specs/integration-tests-study.md))
+- [x] Add study API integration tests ([spec](docs/specs/integration-tests-study.md))
