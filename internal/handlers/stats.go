@@ -27,6 +27,7 @@ func (h *StatsHandler) Register(r *gin.RouterGroup) {
 	r.GET("/stats/maturity", h.Maturity)
 	r.GET("/stats/forecast", h.Forecast)
 	r.GET("/stats/hardest", h.Hardest)
+	r.GET("/stats/tags", h.TagStats)
 }
 
 // Summary returns high-level review statistics.
@@ -382,6 +383,78 @@ func (h *StatsHandler) Hardest(c *gin.Context) {
 	}
 	if err := rows.Err(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to iterate hardest card rows"})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// TagStats returns per-tag metrics: card count, reviews, accuracy, and maturity distribution.
+// GET /api/stats/tags
+func (h *StatsHandler) TagStats(c *gin.Context) {
+	rows, err := h.db.Query(`
+		SELECT
+			ct.tag,
+			COUNT(DISTINCT ct.card_id) AS total_cards,
+			COALESCE(SUM(rev.total_reviews), 0) AS total_reviews,
+			CASE WHEN COALESCE(SUM(rev.total_reviews), 0) = 0 THEN 0
+				ELSE CAST(COALESCE(SUM(rev.good_reviews), 0) AS REAL) / SUM(rev.total_reviews)
+			END AS accuracy,
+			COALESCE(SUM(mat.new_count), 0) AS new_count,
+			COALESCE(SUM(mat.learning_count), 0) AS learning_count,
+			COALESCE(SUM(mat.young_count), 0) AS young_count,
+			COALESCE(SUM(mat.mature_count), 0) AS mature_count
+		FROM card_tags ct
+		JOIN cards c ON c.id = ct.card_id AND c.deleted_at IS NULL AND c.suspended = FALSE
+		LEFT JOIN (
+			SELECT card_id,
+				COUNT(*) AS total_reviews,
+				SUM(CASE WHEN rating >= 3 THEN 1 ELSE 0 END) AS good_reviews
+			FROM review_events
+			GROUP BY card_id
+		) rev ON rev.card_id = ct.card_id
+		LEFT JOIN (
+			SELECT s.card_id,
+				SUM(CASE WHEN s.status = 'new' THEN 1 ELSE 0 END) AS new_count,
+				SUM(CASE WHEN s.status = 'learning' THEN 1 ELSE 0 END) AS learning_count,
+				SUM(CASE WHEN s.status = 'review' AND s.interval_days < 21 THEN 1 ELSE 0 END) AS young_count,
+				SUM(CASE WHEN s.status = 'review' AND s.interval_days >= 21 THEN 1 ELSE 0 END) AS mature_count
+			FROM srs_state s
+			GROUP BY s.card_id
+		) mat ON mat.card_id = ct.card_id
+		GROUP BY ct.tag
+		ORDER BY total_cards DESC
+	`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query tag stats"})
+		return
+	}
+	defer rows.Close()
+
+	type tagStatsEntry struct {
+		Tag          string  `json:"tag"`
+		TotalCards   int     `json:"totalCards"`
+		TotalReviews int     `json:"totalReviews"`
+		Accuracy     float64 `json:"accuracy"`
+		New          int     `json:"new"`
+		Learning     int     `json:"learning"`
+		Young        int     `json:"young"`
+		Mature       int     `json:"mature"`
+	}
+
+	result := []tagStatsEntry{}
+	for rows.Next() {
+		var e tagStatsEntry
+		if err := rows.Scan(&e.Tag, &e.TotalCards, &e.TotalReviews, &e.Accuracy,
+			&e.New, &e.Learning, &e.Young, &e.Mature); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to scan tag stats row"})
+			return
+		}
+		e.Accuracy = math.Round(e.Accuracy*100) / 100
+		result = append(result, e)
+	}
+	if err := rows.Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to iterate tag stats rows"})
 		return
 	}
 

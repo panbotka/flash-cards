@@ -114,6 +114,17 @@ export interface ForecastEntry {
   count: number
 }
 
+export interface TagStatsEntry {
+  tag: string
+  totalCards: number
+  totalReviews: number
+  accuracy: number
+  new: number
+  learning: number
+  young: number
+  mature: number
+}
+
 export interface HardestCard {
   cardId: number
   czech: string
@@ -267,6 +278,9 @@ export function getStatsForecast() {
 }
 export function getStatsHardest() {
   return request<HardestCard[]>('/stats/hardest')
+}
+export function getStatsTagBreakdown() {
+  return request<TagStatsEntry[]>('/stats/tags')
 }
 
 export function isStudyCard(r: StudyCardResponse | StudyDoneResponse): r is StudyCardResponse {

@@ -17,12 +17,14 @@ import {
   getStatsMaturity,
   getStatsForecast,
   getStatsHardest,
+  getStatsTagBreakdown,
 } from '../api/client'
 import type {
   HeatmapEntry,
   AccuracyEntry,
   ForecastEntry,
   HardestCard,
+  TagStatsEntry,
 } from '../api/client'
 
 // ---------------------------------------------------------------------------
@@ -537,6 +539,114 @@ function HardestCardsTable() {
 }
 
 // ---------------------------------------------------------------------------
+// 7. Tag Breakdown
+// ---------------------------------------------------------------------------
+const TAG_MATURITY_COLORS: Record<string, string> = {
+  new: '#5e9eff',
+  learning: '#ff9f0a',
+  young: '#30d158',
+  mature: '#34c759',
+}
+
+function MaturityBar({ entry }: { entry: TagStatsEntry }) {
+  const total = entry.new + entry.learning + entry.young + entry.mature
+  if (total === 0) return <div className="h-2 rounded bg-[#2a2a2a]" />
+
+  const segments = [
+    { key: 'new', count: entry.new },
+    { key: 'learning', count: entry.learning },
+    { key: 'young', count: entry.young },
+    { key: 'mature', count: entry.mature },
+  ].filter((s) => s.count > 0)
+
+  return (
+    <div className="flex h-2 rounded overflow-hidden gap-px">
+      {segments.map((s) => (
+        <div
+          key={s.key}
+          style={{
+            width: `${(s.count / total) * 100}%`,
+            backgroundColor: TAG_MATURITY_COLORS[s.key],
+          }}
+          title={`${s.key}: ${s.count}`}
+        />
+      ))}
+    </div>
+  )
+}
+
+function TagBreakdown() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['stats', 'tags'],
+    queryFn: getStatsTagBreakdown,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="bg-[#1a1a1a] rounded-xl p-4 border border-[#2a2a2a] h-[200px] animate-pulse" />
+    )
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-[#1a1a1a] rounded-xl p-4 border border-[#2a2a2a] text-[#6e6e73] text-sm">
+        No tags yet.
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-[#1a1a1a] rounded-xl border border-[#2a2a2a] overflow-hidden">
+      <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[#2a2a2a] text-[#6e6e73] text-xs uppercase tracking-wider">
+              <th className="text-left p-3 font-medium">Tag</th>
+              <th className="text-right p-3 font-medium">Cards</th>
+              <th className="text-right p-3 font-medium">Reviews</th>
+              <th className="text-right p-3 font-medium">Accuracy</th>
+              <th className="p-3 font-medium w-24">Maturity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((entry: TagStatsEntry) => (
+              <tr
+                key={entry.tag}
+                className="border-b border-[#2a2a2a] last:border-b-0"
+              >
+                <td className="p-3 text-white font-medium">{entry.tag}</td>
+                <td className="p-3 text-right text-[#a1a1a6]">
+                  {entry.totalCards}
+                </td>
+                <td className="p-3 text-right text-[#a1a1a6]">
+                  {entry.totalReviews}
+                </td>
+                <td
+                  className="p-3 text-right font-medium"
+                  style={{
+                    color:
+                      entry.totalReviews > 0
+                        ? accuracyColor(entry.accuracy)
+                        : '#6e6e73',
+                  }}
+                >
+                  {entry.totalReviews > 0
+                    ? `${Math.round(entry.accuracy * 100)}%`
+                    : '—'}
+                </td>
+                <td className="p-3">
+                  <MaturityBar entry={entry} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 export function StatsPage() {
@@ -560,6 +670,11 @@ export function StatsPage() {
       <section>
         <SectionTitle>Card Maturity</SectionTitle>
         <MaturityChart />
+      </section>
+
+      <section>
+        <SectionTitle>Tag Breakdown</SectionTitle>
+        <TagBreakdown />
       </section>
 
       <section>
