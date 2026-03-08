@@ -8,6 +8,7 @@ import { CardsPage } from './pages/CardsPage'
 import { ImportPage } from './pages/ImportPage'
 import { StatsPage } from './pages/StatsPage'
 import { CardHistoryPage } from './pages/CardHistoryPage'
+import { UpdatePrompt } from './components/UpdatePrompt'
 
 function LoadingScreen() {
   return (
@@ -63,8 +64,11 @@ export function App() {
   }
 
   return (
-    <BrowserRouter>
-      <AppLayout />
-    </BrowserRouter>
+    <>
+      <UpdatePrompt />
+      <BrowserRouter>
+        <AppLayout />
+      </BrowserRouter>
+    </>
   )
 }

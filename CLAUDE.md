@@ -61,7 +61,7 @@ No ORM — all database access uses raw SQL with `database/sql`.
 - `frontend/src/hooks/useKeyboardShortcuts.ts` — Space (flip), 1-3 (rate), ignores input fields.
 - `frontend/src/hooks/useSwipeRating.ts` — Touch swipe gestures for mobile rating (left=Easy, up=Good, right=Hard). Uses native touch listeners with `passive: false` and immediate `preventDefault()` for iOS Safari compatibility. Reads `enabled`/`onRate` via refs to keep listeners stable. Swipe-off animates card out with fade, new card fades in.
 - Pages: `StudyPage`, `CardsPage`, `ImportPage`, `StatsPage`, `LoginPage`
-- Components: `FlashCard` (3D CSS flip), `RatingButtons`, `TagFilter` (with edit mode + bottom sheet for rename/delete), `NavBar` (bottom tabs)
+- Components: `FlashCard` (3D CSS flip), `RatingButtons`, `TagFilter` (with edit mode + bottom sheet for rename/delete), `NavBar` (bottom tabs), `UpdatePrompt` (SW update banner)
 
 State management: TanStack Query for server state, local `useState` for UI state. No global store.
 
@@ -75,9 +75,11 @@ State management: TanStack Query for server state, local `useState` for UI state
 
 **Stats accuracy values**: The API returns accuracy as a 0–1 fraction. The frontend multiplies by 100 for display.
 
-## PWA & Icons
+## PWA & Service Worker
 
-The app is PWA-installable. Static assets in `frontend/public/`:
+The app is PWA-installable with offline asset caching and auto-update prompts. `vite-plugin-pwa` (Workbox `generateSW` mode) generates a service worker that precaches all static assets (JS, CSS, HTML, icons). API routes (`/api/*`) are excluded from caching via `navigateFallbackDenylist`. Registration uses `registerType: 'prompt'` — when a new SW is detected, `UpdatePrompt` shows a banner; the user can reload or dismiss.
+
+Static assets in `frontend/public/`:
 
 - `icon.svg` — Main favicon (SVG, scales to any size)
 - `icon-180.png` — Apple touch icon
