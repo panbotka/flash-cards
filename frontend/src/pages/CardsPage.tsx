@@ -201,11 +201,13 @@ function ActionMenu({
 
 function CardRow({
   card,
+  onTap,
   onEdit,
   onDelete,
   onSuspendToggle,
 }: {
   card: Card
+  onTap: () => void
   onEdit: () => void
   onDelete: () => void
   onSuspendToggle: () => void
@@ -225,7 +227,7 @@ function CardRow({
         <button
           type="button"
           className="flex-1 min-w-0 text-left"
-          onClick={onEdit}
+          onClick={onTap}
         >
           <p className="text-base font-medium text-white truncate">{card.czech}</p>
           <p className="text-sm text-text-secondary truncate mt-0.5">{card.english}</p>
@@ -468,6 +470,7 @@ export function CardsPage() {
                 <CardRow
                   key={card.id}
                   card={card}
+                  onTap={() => navigate(`/cards/${card.id}`)}
                   onEdit={() => setModalCard(card)}
                   onDelete={() => handleDelete(card)}
                   onSuspendToggle={() => handleSuspendToggle(card)}

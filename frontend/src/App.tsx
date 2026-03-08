@@ -7,6 +7,7 @@ import { StudyPage } from './pages/StudyPage'
 import { CardsPage } from './pages/CardsPage'
 import { ImportPage } from './pages/ImportPage'
 import { StatsPage } from './pages/StatsPage'
+import { CardHistoryPage } from './pages/CardHistoryPage'
 
 function LoadingScreen() {
   return (
@@ -25,6 +26,7 @@ function AppLayout() {
       <Routes>
         <Route path="/" element={<StudyPage />} />
         <Route path="/cards" element={<CardsPage />} />
+        <Route path="/cards/:id" element={<CardHistoryPage />} />
         <Route path="/import" element={<ImportPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

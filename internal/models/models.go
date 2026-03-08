@@ -82,6 +82,12 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// CardHistoryResponse wraps a card and its review events for the history view.
+type CardHistoryResponse struct {
+	Card    Card          `json:"card"`
+	Reviews []ReviewEvent `json:"reviews"`
+}
+
 // StudyDoneResponse is returned when all cards are done for the session.
 type StudyDoneResponse struct {
 	Done         bool `json:"done"`

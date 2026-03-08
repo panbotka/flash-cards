@@ -30,6 +30,7 @@ func (h *CardHandler) Register(r *gin.RouterGroup) {
 	r.GET("/cards/export", h.ExportCards)
 	r.GET("/cards", h.ListCards)
 	r.GET("/cards/:id", h.GetCard)
+	r.GET("/cards/:id/history", h.GetCardHistory)
 	r.POST("/cards", h.CreateCard)
 	r.PUT("/cards/:id", h.UpdateCard)
 	r.DELETE("/cards/:id", h.DeleteCard)
@@ -315,6 +316,60 @@ func (h *CardHandler) GetCard(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, card)
+}
+
+// GetCardHistory returns a card with all its review events, ordered by reviewed_at descending.
+func (h *CardHandler) GetCardHistory(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid card id"})
+		return
+	}
+
+	var card models.Card
+	err = h.db.QueryRow(
+		`SELECT id, czech, english, deleted_at, suspended, created_at, updated_at FROM cards WHERE id = ?`, id,
+	).Scan(&card.ID, &card.Czech, &card.English, &card.DeletedAt, &card.Suspended, &card.CreatedAt, &card.UpdatedAt)
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusNotFound, gin.H{"error": "card not found"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query card"})
+		return
+	}
+
+	card.Tags, _ = h.fetchTags(card.ID)
+	card.SRSStates, _ = h.fetchSRSStates(card.ID)
+
+	rows, err := h.db.Query(
+		`SELECT id, srs_state_id, card_id, direction, rating, reviewed_at, interval_before, interval_after, ease_before, ease_after
+		 FROM review_events WHERE card_id = ? ORDER BY reviewed_at DESC`, id,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query review events"})
+		return
+	}
+	defer rows.Close()
+
+	reviews := []models.ReviewEvent{}
+	for rows.Next() {
+		var r models.ReviewEvent
+		if err := rows.Scan(&r.ID, &r.SRSStateID, &r.CardID, &r.Direction, &r.Rating, &r.ReviewedAt, &r.IntervalBefore, &r.IntervalAfter, &r.EaseBefore, &r.EaseAfter); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to scan review event"})
+			return
+		}
+		reviews = append(reviews, r)
+	}
+	if err := rows.Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to iterate review events"})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.CardHistoryResponse{
+		Card:    card,
+		Reviews: reviews,
+	})
 }
 
 // CreateCard inserts a new card with tags and initial SRS states for both directions.

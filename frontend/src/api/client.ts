@@ -123,6 +123,28 @@ export interface HardestCard {
   accuracy: number
 }
 
+export interface ReviewEvent {
+  id: number
+  srsStateId: number
+  cardId: number
+  direction: string
+  rating: number
+  reviewedAt: string
+  intervalBefore?: number | null
+  intervalAfter?: number | null
+  easeBefore?: number | null
+  easeAfter?: number | null
+}
+
+export interface CardHistoryResponse {
+  card: Card
+  reviews: ReviewEvent[]
+}
+
+export function getCardHistory(id: number) {
+  return request<CardHistoryResponse>(`/cards/${id}/history`)
+}
+
 export function getTags() {
   return request<string[]>('/tags')
 }
