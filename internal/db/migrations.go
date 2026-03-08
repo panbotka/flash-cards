@@ -101,6 +101,16 @@ ALTER TABLE review_events ADD COLUMN next_review_before DATETIME;
 ALTER TABLE review_events ADD COLUMN cram BOOLEAN DEFAULT FALSE;
 `,
 	},
+	{
+		version: 6,
+		sql: `
+-- Key-value settings table for app configuration.
+CREATE TABLE settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+`,
+	},
 }
 
 // RunMigrations applies all pending schema migrations to the database.

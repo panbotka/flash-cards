@@ -283,6 +283,22 @@ export function getStatsTagBreakdown() {
   return request<TagStatsEntry[]>('/stats/tags')
 }
 
+// Settings
+export interface DailyGoalResponse {
+  goal: number
+}
+
+export function getDailyGoal() {
+  return request<DailyGoalResponse>('/settings/daily-goal')
+}
+
+export function setDailyGoal(goal: number) {
+  return request<DailyGoalResponse>('/settings/daily-goal', {
+    method: 'PUT',
+    body: JSON.stringify({ goal }),
+  })
+}
+
 export function isStudyCard(r: StudyCardResponse | StudyDoneResponse): r is StudyCardResponse {
   return 'card' in r
 }

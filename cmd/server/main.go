@@ -46,6 +46,7 @@ func main() {
 	handlers.NewStudyHandler(database).Register(api)
 	handlers.NewImportHandler(database).Register(api)
 	handlers.NewStatsHandler(database).Register(api)
+	handlers.NewSettingsHandler(database).Register(api)
 
 	// Serve embedded frontend
 	distFS, err := fs.Sub(flashcards.FrontendDist, "frontend/dist")
