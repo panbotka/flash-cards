@@ -94,6 +94,13 @@ ALTER TABLE review_events ADD COLUMN repetitions_before INTEGER;
 ALTER TABLE review_events ADD COLUMN next_review_before DATETIME;
 `,
 	},
+	{
+		version: 5,
+		sql: `
+-- Add cram flag to review_events to distinguish cram reviews from SRS reviews.
+ALTER TABLE review_events ADD COLUMN cram BOOLEAN DEFAULT FALSE;
+`,
+	},
 }
 
 // RunMigrations applies all pending schema migrations to the database.

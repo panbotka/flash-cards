@@ -1,7 +1,7 @@
 # Flash Cards TODO
 
 - [x] Add undo last review ([spec](docs/specs/undo-review.md))
-- [ ] Add cram mode ([spec](docs/specs/cram-mode.md))
+- [x] Add cram mode ([spec](docs/specs/cram-mode.md))
 - [ ] Add export cards to CSV ([spec](docs/specs/export-csv.md))
 - [ ] Add per-card review history ([spec](docs/specs/card-history.md))
 - [ ] Add per-tag stats ([spec](docs/specs/per-tag-stats.md))

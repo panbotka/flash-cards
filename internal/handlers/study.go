@@ -37,12 +37,37 @@ func validDirection(d string) bool {
 }
 
 // NextCard returns the next due card for review.
-// GET /api/study/next?tag=...&direction=...
+// GET /api/study/next?tag=...&direction=...&mode=cram&exclude=1,2,3
 func (h *StudyHandler) NextCard(c *gin.Context) {
 	tag := strings.TrimSpace(c.Query("tag"))
 	direction := c.DefaultQuery("direction", "cz_en")
 	if !validDirection(direction) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid direction"})
+		return
+	}
+
+	mode := c.Query("mode")
+	if mode == "cram" {
+		// Parse excluded SRS state IDs (already-seen cards in this cram session).
+		var excludeIDs []int64
+		if exc := c.Query("exclude"); exc != "" {
+			for _, s := range strings.Split(exc, ",") {
+				if id, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64); err == nil {
+					excludeIDs = append(excludeIDs, id)
+				}
+			}
+		}
+		state, card, tags, found, err := h.findCramCard(tag, direction, excludeIDs)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch cram card"})
+			return
+		}
+		if !found {
+			c.JSON(http.StatusOK, models.StudyDoneResponse{Done: true, NewAvailable: 0})
+			return
+		}
+		card.Tags = tags
+		h.respondWithStudyCard(c, card, state)
 		return
 	}
 
@@ -124,6 +149,25 @@ func (h *StudyHandler) SubmitReview(c *gin.Context) {
 	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch SRS state"})
+		return
+	}
+
+	if req.Cram {
+		// Cram mode: log the review event but do NOT update SRS state.
+		_, err = h.db.Exec(`
+			INSERT INTO review_events
+				(srs_state_id, card_id, direction, rating, reviewed_at, cram)
+			VALUES (?, ?, ?, ?, ?, TRUE)
+		`, state.ID, state.CardID, state.Direction, req.Rating, time.Now())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to record review event"})
+			return
+		}
+
+		c.JSON(http.StatusOK, models.ReviewResponse{
+			SRSState:     state,
+			NextInterval: "",
+		})
 		return
 	}
 
@@ -371,6 +415,69 @@ func (h *StudyHandler) findDueCard(tag string, direction string, newOnly bool) (
 	}
 
 	// Fetch tags for this card.
+	tags, err := h.fetchCardTags(card.ID)
+	if err != nil {
+		return state, card, nil, false, fmt.Errorf("fetching card tags: %w", err)
+	}
+
+	return state, card, tags, true, nil
+}
+
+// findCramCard returns a random card for cram mode, excluding already-seen SRS state IDs.
+func (h *StudyHandler) findCramCard(tag string, direction string, excludeIDs []int64) (models.SRSState, models.Card, []string, bool, error) {
+	var state models.SRSState
+	var card models.Card
+
+	args := make([]interface{}, 0, 4)
+	var conditions []string
+	joinClause := ""
+
+	conditions = append(conditions, "c.deleted_at IS NULL")
+	conditions = append(conditions, "c.suspended = FALSE")
+	conditions = append(conditions, "s.direction = ?")
+	args = append(args, direction)
+
+	if tag != "" {
+		joinClause = "JOIN card_tags ct ON ct.card_id = c.id"
+		conditions = append(conditions, "ct.tag = ?")
+		args = append(args, tag)
+	}
+
+	if len(excludeIDs) > 0 {
+		placeholders := make([]string, len(excludeIDs))
+		for i, id := range excludeIDs {
+			placeholders[i] = "?"
+			args = append(args, id)
+		}
+		conditions = append(conditions, fmt.Sprintf("s.id NOT IN (%s)", strings.Join(placeholders, ",")))
+	}
+
+	query := fmt.Sprintf(`
+		SELECT s.id, s.card_id, s.direction, s.ease_factor, s.interval_days,
+		       s.repetitions, s.next_review, s.status, s.learning_step,
+		       c.id, c.czech, c.english, c.deleted_at, c.suspended, c.created_at, c.updated_at
+		FROM srs_state s
+		JOIN cards c ON c.id = s.card_id
+		%s
+		WHERE %s
+		ORDER BY RANDOM()
+		LIMIT 1
+	`, joinClause, strings.Join(conditions, " AND "))
+
+	err := h.db.QueryRow(query, args...).Scan(
+		&state.ID, &state.CardID, &state.Direction,
+		&state.EaseFactor, &state.IntervalDays,
+		&state.Repetitions, &state.NextReview, &state.Status, &state.LearningStep,
+		&card.ID, &card.Czech, &card.English, &card.DeletedAt, &card.Suspended,
+		&card.CreatedAt, &card.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return state, card, nil, false, nil
+	}
+	if err != nil {
+		return state, card, nil, false, fmt.Errorf("querying cram card: %w", err)
+	}
+
 	tags, err := h.fetchCardTags(card.ID)
 	if err != nil {
 		return state, card, nil, false, fmt.Errorf("fetching card tags: %w", err)

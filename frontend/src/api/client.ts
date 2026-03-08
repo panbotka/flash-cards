@@ -173,10 +173,12 @@ export function deleteTagWithCards(tag: string) {
 }
 
 // Study
-export function getNextCard(params?: { tag?: string; direction?: string }) {
+export function getNextCard(params?: { tag?: string; direction?: string; mode?: string; exclude?: number[] }) {
   const sp = new URLSearchParams()
   if (params?.tag) sp.set('tag', params.tag)
   if (params?.direction) sp.set('direction', params.direction)
+  if (params?.mode) sp.set('mode', params.mode)
+  if (params?.exclude && params.exclude.length > 0) sp.set('exclude', params.exclude.join(','))
   const qs = sp.toString()
   return request<StudyCardResponse | StudyDoneResponse>(`/study/next${qs ? `?${qs}` : ''}`)
 }
@@ -189,10 +191,10 @@ export function getNewCard(params?: { tag?: string; direction?: string }) {
   return request<StudyCardResponse | StudyDoneResponse>(`/study/new${qs ? `?${qs}` : ''}`)
 }
 
-export function submitReview(srsStateId: number, rating: number) {
+export function submitReview(srsStateId: number, rating: number, cram?: boolean) {
   return request<ReviewResponse>('/study/review', {
     method: 'POST',
-    body: JSON.stringify({ srsStateId, rating }),
+    body: JSON.stringify({ srsStateId, rating, ...(cram ? { cram: true } : {}) }),
   })
 }
 

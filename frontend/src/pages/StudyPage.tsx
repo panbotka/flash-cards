@@ -7,9 +7,9 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { useSwipeRating } from '../hooks/useSwipeRating'
 import { getTags } from '../api/client'
 
-function StudyContent({ direction, tag }: { direction: 'cz_en' | 'en_cz'; tag?: string }) {
+function StudyContent({ direction, tag, cram }: { direction: 'cz_en' | 'en_cz'; tag?: string; cram: boolean }) {
   const { card, flipped, flip, rate, isDone, newAvailable, showNewCards, isLoading, isRating, canUndo, undo } =
-    useStudySession(tag, direction)
+    useStudySession(tag, direction, cram)
 
   const handlers = useMemo(
     () => ({
@@ -114,14 +114,18 @@ function StudyContent({ direction, tag }: { direction: 'cz_en' | 'en_cz'; tag?: 
       {isDone && !isLoading && (
         <div className="flex flex-col items-center justify-center flex-1 mt-20 text-center">
           <div className="text-5xl mb-6">&#10003;</div>
-          <h2 className="text-2xl font-semibold text-white mb-2">All caught up!</h2>
+          <h2 className="text-2xl font-semibold text-white mb-2">
+            {cram ? 'All cards reviewed!' : 'All caught up!'}
+          </h2>
           <p className="text-[#a1a1a6] mb-8">
-            {newAvailable > 0
-              ? `${newAvailable} new card${newAvailable === 1 ? '' : 's'} available to learn.`
-              : 'No more cards to review today.'}
+            {cram
+              ? 'You\'ve gone through all cards in this cram session.'
+              : newAvailable > 0
+                ? `${newAvailable} new card${newAvailable === 1 ? '' : 's'} available to learn.`
+                : 'No more cards to review today.'}
           </p>
           <div className="flex flex-col gap-3 w-full max-w-xs">
-            {newAvailable > 0 && (
+            {!cram && newAvailable > 0 && (
               <button
                 onClick={showNewCards}
                 className="w-full py-3 px-6 rounded-xl bg-[#5e9eff] text-white font-medium transition-all duration-150 active:scale-95 hover:bg-[#4a8af0]"
@@ -145,6 +149,7 @@ function StudyContent({ direction, tag }: { direction: 'cz_en' | 'en_cz'; tag?: 
 export function StudyPage() {
   const [direction, setDirection] = useState<'cz_en' | 'en_cz'>('cz_en')
   const [selectedTag, setSelectedTag] = useState<string>('')
+  const [cramMode, setCramMode] = useState(false)
 
   const { data: tags } = useQuery({
     queryKey: ['tags'],
@@ -153,6 +158,15 @@ export function StudyPage() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-[#0a0a0a] px-4 pb-20 overflow-hidden" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0.75rem)' }}>
+      {/* Cram mode banner */}
+      {cramMode && (
+        <div className="w-full max-w-md mx-auto mb-2 shrink-0 text-center">
+          <span className="inline-block text-xs font-medium px-3 py-1 rounded-full bg-[#ff9f0a]/15 text-[#ff9f0a] border border-[#ff9f0a]/30">
+            Cram Mode — SRS not affected
+          </span>
+        </div>
+      )}
+
       {/* Control bar */}
       <div className="w-full max-w-md mx-auto flex items-center justify-between mb-4 shrink-0">
         {/* Direction toggle */}
@@ -179,25 +193,40 @@ export function StudyPage() {
           </button>
         </div>
 
-        {/* Tag filter */}
-        <select
-          value={selectedTag}
-          onChange={(e) => setSelectedTag(e.target.value)}
-          className="bg-[#1a1a1a] border border-[#2a2a2a] text-[#a1a1a6] text-xs rounded-lg px-3 py-1.5 outline-none focus:border-[#5e9eff] max-w-[140px]"
-        >
-          <option value="">All tags</option>
-          {tags?.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          {/* Cram toggle */}
+          <button
+            onClick={() => setCramMode((v) => !v)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+              cramMode
+                ? 'bg-[#ff9f0a]/15 text-[#ff9f0a] border-[#ff9f0a]/30'
+                : 'bg-[#1a1a1a] text-[#a1a1a6] border-[#2a2a2a] hover:bg-[#222]'
+            }`}
+          >
+            Cram
+          </button>
+
+          {/* Tag filter */}
+          <select
+            value={selectedTag}
+            onChange={(e) => setSelectedTag(e.target.value)}
+            className="bg-[#1a1a1a] border border-[#2a2a2a] text-[#a1a1a6] text-xs rounded-lg px-3 py-1.5 outline-none focus:border-[#5e9eff] max-w-[140px]"
+          >
+            <option value="">All tags</option>
+            {tags?.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Key resets flipped/showingNew state when direction or tag changes */}
       <div className="flex-1 min-h-0 flex flex-col items-center overflow-hidden">
         <StudyContent
-          key={`${direction}-${selectedTag}`}
+          key={`${direction}-${selectedTag}-${cramMode}`}
           direction={direction}
           tag={selectedTag || undefined}
+          cram={cramMode}
         />
       </div>
     </div>

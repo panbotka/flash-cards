@@ -56,6 +56,7 @@ type UpdateCardRequest struct {
 type ReviewRequest struct {
 	SRSStateID int64 `json:"srsStateId" binding:"required"`
 	Rating     int   `json:"rating" binding:"required,min=1,max=4"`
+	Cram       bool  `json:"cram"`
 }
 
 type ImportPreviewRequest struct {
