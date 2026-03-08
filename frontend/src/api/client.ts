@@ -166,6 +166,10 @@ export function renameTag(oldName: string, newName: string) {
   })
 }
 
+export function exportCards() {
+  window.location.href = `${BASE}/cards/export`
+}
+
 export function deleteTagWithCards(tag: string) {
   return request<{ deleted: number }>(`/tags/${encodeURIComponent(tag)}`, {
     method: 'DELETE',

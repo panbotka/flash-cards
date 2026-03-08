@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/csv"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,6 +27,7 @@ func (h *CardHandler) Register(r *gin.RouterGroup) {
 	r.GET("/tags", h.ListTags)
 	r.PUT("/tags", h.RenameTag)
 	r.DELETE("/tags/:tag", h.DeleteTag)
+	r.GET("/cards/export", h.ExportCards)
 	r.GET("/cards", h.ListCards)
 	r.GET("/cards/:id", h.GetCard)
 	r.POST("/cards", h.CreateCard)
@@ -59,6 +61,73 @@ func (h *CardHandler) ListTags(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, tags)
+}
+
+// ExportCards returns all non-deleted cards as a CSV file download.
+func (h *CardHandler) ExportCards(c *gin.Context) {
+	rows, err := h.db.Query(`SELECT id, czech, english FROM cards WHERE deleted_at IS NULL ORDER BY id`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query cards"})
+		return
+	}
+	defer rows.Close()
+
+	type row struct {
+		id      int64
+		czech   string
+		english string
+	}
+	var cards []row
+	var ids []string
+	for rows.Next() {
+		var r row
+		if err := rows.Scan(&r.id, &r.czech, &r.english); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to scan card"})
+			return
+		}
+		cards = append(cards, r)
+		ids = append(ids, strconv.FormatInt(r.id, 10))
+	}
+	if err := rows.Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to iterate cards"})
+		return
+	}
+
+	// Fetch tags for all cards in one query.
+	tagMap := map[int64][]string{}
+	if len(ids) > 0 {
+		tagRows, err := h.db.Query(`SELECT card_id, tag FROM card_tags WHERE card_id IN (` + strings.Join(ids, ",") + `) ORDER BY tag`)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query tags"})
+			return
+		}
+		defer tagRows.Close()
+		for tagRows.Next() {
+			var cardID int64
+			var tag string
+			if err := tagRows.Scan(&cardID, &tag); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to scan tag"})
+				return
+			}
+			tagMap[cardID] = append(tagMap[cardID], tag)
+		}
+		if err := tagRows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to iterate tags"})
+			return
+		}
+	}
+
+	c.Header("Content-Disposition", `attachment; filename="flash-cards.csv"`)
+	c.Header("Content-Type", "text/csv")
+
+	w := csv.NewWriter(c.Writer)
+	for _, card := range cards {
+		tags := strings.Join(tagMap[card.id], " ")
+		if err := w.Write([]string{card.czech, card.english, tags}); err != nil {
+			return
+		}
+	}
+	w.Flush()
 }
 
 // RenameTag renames a tag across all cards. Merges if the target tag already exists on some cards.
